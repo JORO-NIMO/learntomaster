@@ -1,12 +1,7 @@
+import { QueueRecord } from '@/types';
+
 const DB_NAME = 'learn2master_offline_v1';
 const STORE_QUEUE = 'attempt_queue';
-
-export type QueueRecord = {
-  client_id: string;
-  type: string;
-  payload: any;
-  created_at: string;
-};
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

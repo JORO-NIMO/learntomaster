@@ -42,6 +42,22 @@ CORS(app)
 def startup():
     init_db()
 
+
+def parse_bearer_lin(auth_header: str):
+    """Parse Authorization: Bearer tok-<lin>-<timestamp> and return lin if valid."""
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    token = auth_header.split(' ', 1)[1].strip()
+    if not token.startswith('tok-'):
+        return None
+    try:
+        payload = token[4:]
+        lin, _ts = payload.rsplit('-', 1)
+        # _ts is a unix timestamp string; we accept any for prototype
+        return lin
+    except Exception:
+        return None
+
 @app.route('/api/v1/auth/register', methods=['POST'])
 def register():
     data = request.json or {}
@@ -85,6 +101,10 @@ def login():
 
 @app.route('/api/v1/sync/upload', methods=['POST'])
 def sync_upload():
+    # Prototype auth: expect Authorization: Bearer tok-<lin>-<ts>
+    auth_lin = parse_bearer_lin(request.headers.get('Authorization', ''))
+    if not auth_lin:
+        return jsonify({'error': 'unauthorized'}), 401
     data = request.json or {}
     queue = data.get('queue', [])
     if not isinstance(queue, list):
@@ -97,6 +117,14 @@ def sync_upload():
         record_type = item.get('type')
         payload = item.get('payload')
         created_at = item.get('created_at') or datetime.utcnow().isoformat()
+        try:
+            rec_lin = None
+            if isinstance(payload, dict):
+                rec_lin = payload.get('lin')
+            if rec_lin and rec_lin != auth_lin:
+                return jsonify({'error': 'lin mismatch', 'client_id': client_id}), 403
+        except Exception:
+            pass
         cur.execute('INSERT INTO sync_queue (client_id,record_type,payload,created_at,uploaded) VALUES (?,?,?,?,1)',
                     (client_id, record_type, json.dumps(payload, ensure_ascii=False), created_at))
         results.append({'client_id': client_id, 'status': 'ok'})
