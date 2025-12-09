@@ -49,17 +49,14 @@ async function deriveVerifier(secret: string, saltB64: string) {
     enc.encode(secret),
     { name: 'PBKDF2' },
     false,
-    ['deriveBits', 'deriveKey']
-  );
-  const derived = await crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 150_000, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'HKDF', hash: 'SHA-256', length: 256 },
-    true,
     ['deriveBits']
   );
-  const raw = await crypto.subtle.exportKey('raw', derived);
-  const arr = new Uint8Array(raw);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: 150_000, hash: 'SHA-256' },
+    keyMaterial,
+    256
+  );
+  const arr = new Uint8Array(bits);
   return btoa(String.fromCharCode(...arr));
 }
 

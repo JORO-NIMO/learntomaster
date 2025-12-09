@@ -3,6 +3,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
+import json
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data.db')
@@ -97,7 +98,7 @@ def sync_upload():
         payload = item.get('payload')
         created_at = item.get('created_at') or datetime.utcnow().isoformat()
         cur.execute('INSERT INTO sync_queue (client_id,record_type,payload,created_at,uploaded) VALUES (?,?,?,?,1)',
-                    (client_id, record_type, str(payload), created_at))
+                    (client_id, record_type, json.dumps(payload, ensure_ascii=False), created_at))
         results.append({'client_id': client_id, 'status': 'ok'})
     conn.commit()
     return jsonify({'results': results}), 200

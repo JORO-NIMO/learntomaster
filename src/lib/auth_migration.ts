@@ -25,7 +25,11 @@ export async function serverLogin(lin: string, name: string, secret: string) {
       body: JSON.stringify({ lin, name, secret })
     });
     if (!res.ok) throw new Error('server login failed');
-    return await res.json();
+    const data = await res.json();
+    if (data?.session_token) {
+      localStorage.setItem('l2m_server_session_v1', JSON.stringify({ token: data.session_token, lin: data.lin, name: data.name, at: Date.now() }));
+    }
+    return data;
   } catch (e) {
     // fallback to local
     return await localLogin(lin, name, secret);

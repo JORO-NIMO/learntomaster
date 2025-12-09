@@ -1,15 +1,34 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Search, Menu, X, Zap } from 'lucide-react';
+import { Bell, Search, Menu, X, Zap, RefreshCcw } from 'lucide-react';
 import { mockLearner } from '@/data/mockData';
+import { toast } from '@/components/ui/use-toast';
+import { syncQueueToServer } from '@/lib/offline';
 
 interface DashboardHeaderProps {
   onMenuToggle?: () => void;
   isMobileMenuOpen?: boolean;
 }
 
+const SERVER_BASE = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+
 export const DashboardHeader = ({ onMenuToggle, isMobileMenuOpen }: DashboardHeaderProps) => {
+  const [syncing, setSyncing] = useState(false);
+
+  const doSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const res = await syncQueueToServer(SERVER_BASE);
+      toast({ title: 'Sync complete', description: `Uploaded ${res.uploaded ?? 0} item(s)` });
+    } catch (e: any) {
+      toast({ title: 'Sync failed', description: e?.message ?? 'Error during sync', variant: 'destructive' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
       <div className="flex items-center justify-between h-16 px-4 lg:px-8">
@@ -39,6 +58,11 @@ export const DashboardHeader = ({ onMenuToggle, isMobileMenuOpen }: DashboardHea
         
         {/* Right side */}
         <div className="flex items-center gap-3">
+          {/* Manual Sync */}
+          <Button variant="outline" size="sm" onClick={doSync} disabled={syncing}>
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            {syncing ? 'Syncing...' : 'Sync now'}
+          </Button>
           {/* XP Badge */}
           <Badge variant="accent" className="hidden sm:flex items-center gap-1">
             <Zap className="w-3 h-3" />

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { mockLessons, mockQuizQuestions } from '@/data/mockData';
+import { enqueueAttempt } from '@/lib/offline';
+import { getCurrentUser } from '@/lib/auth';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -31,8 +33,21 @@ const LearnPage = () => {
   const sections = lesson.content.sections;
   const currentSection = sections[currentSectionIndex];
   
-  const handleQuizComplete = (score: number, total: number) => {
-    console.log(`Quiz completed: ${score}/${total}`);
+  const handleQuizComplete = async (score: number, total: number) => {
+    const u = getCurrentUser();
+    const client_id = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `att-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const record = {
+      client_id,
+      type: 'assessment_attempt',
+      payload: {
+        lin: u?.lin ?? null,
+        lessonId: lesson.id,
+        score,
+        total,
+      },
+      created_at: new Date().toISOString(),
+    } as any;
+    try { await enqueueAttempt(record); } catch {}
   };
   
   if (viewMode === 'quiz') {
