@@ -1,6 +1,12 @@
-// Simple IndexedDB wrapper for Learn2Master offline queue
 const DB_NAME = 'learn2master_offline_v1';
 const STORE_QUEUE = 'attempt_queue';
+
+export type QueueRecord = {
+  client_id: string;
+  type: string;
+  payload: any;
+  created_at: string;
+};
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -16,7 +22,7 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-export async function enqueueAttempt(record: any) {
+export async function enqueueAttempt(record: QueueRecord) {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_QUEUE, 'readwrite');
@@ -27,7 +33,7 @@ export async function enqueueAttempt(record: any) {
   });
 }
 
-export async function getAllQueued(): Promise<any[]> {
+export async function getAllQueued(): Promise<QueueRecord[]> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_QUEUE, 'readonly');
@@ -62,9 +68,17 @@ export async function syncQueueToServer(serverUrl: string) {
   const items = await getAllQueued();
   if (!items.length) return { uploaded: 0 };
   const payload = { queue: items };
+  const tokenRaw = localStorage.getItem('l2m_server_session_v1');
+  let authHeader: Record<string, string> = {};
+  if (tokenRaw) {
+    try {
+      const parsed = JSON.parse(tokenRaw);
+      if (parsed?.token) authHeader = { Authorization: `Bearer ${parsed.token}` };
+    } catch {}
+  }
   const res = await fetch(serverUrl.replace(/\/$/, '') + '/api/v1/sync/upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeader },
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('Sync failed: ' + res.status);
