@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    command: npm run dev
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./:/app
+    environment:
+      - NODE_ENV=development
+  server:
+    image: python:3.11-slim
+    working_dir: /app/server
+    volumes:
+      - ./server:/app/server
+    command: bash -lc "pip install -r requirements.txt && python app.py"
+    ports:
+      - '5000:5000'

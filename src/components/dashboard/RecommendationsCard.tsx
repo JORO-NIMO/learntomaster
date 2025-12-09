@@ -2,6 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockRecommendations } from '@/data/mockData';
+import { getCurrentUser } from '@/lib/auth';
+import { getRecommendationsForUser } from '@/lib/ai';
+import { useEffect, useState } from 'react';
 import { BookOpen, Target, RefreshCw, Sparkles, Clock, ArrowRight } from 'lucide-react';
 
 const getIcon = (type: string) => {
@@ -29,6 +32,14 @@ const getPriorityColor = (priority: string) => {
 };
 
 export const RecommendationsCard = () => {
+  const [recs, setRecs] = useState(() => mockRecommendations);
+
+  useEffect(() => {
+    const u = getCurrentUser();
+    if (!u) return;
+    getRecommendationsForUser(u.lin).then(r => setRecs(r)).catch(() => setRecs(mockRecommendations));
+  }, []);
+
   return (
     <Card variant="default">
       <CardHeader>
@@ -38,7 +49,7 @@ export const RecommendationsCard = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {mockRecommendations.map((rec, index) => (
+        {recs.map((rec, index) => (
           <div
             key={index}
             className="group p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"

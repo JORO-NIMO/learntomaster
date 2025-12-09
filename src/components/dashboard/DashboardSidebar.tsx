@@ -19,12 +19,16 @@ const sidebarLinks = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Subjects', href: '/dashboard/subjects', icon: Library },
   { name: 'Achievements', href: '/dashboard/achievements', icon: Trophy },
-  { name: 'Progress', href: '/dashboard/progress', icon: BarChart3 },
-  { name: 'Downloads', href: '/dashboard/downloads', icon: Download },
+  { name: 'Progress', href: '/analytics', icon: BarChart3 },
+  { name: 'Referrals', href: '/referral', icon: Flame },
+  { name: 'Teacher', href: '/teacher', icon: BookOpen },
+  { name: 'Admin', href: '/admin', icon: LayoutDashboard },
+  { name: 'Content', href: '/authoring', icon: Library },
 ];
 
 const bottomLinks = [
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Profile', href: '/profile', icon: HelpCircle },
+  { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'Help', href: '/help', icon: HelpCircle },
 ];
 

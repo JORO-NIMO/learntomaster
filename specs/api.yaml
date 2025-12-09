@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Learn2Master API (prototype)
+  version: '0.1'
+servers:
+  - url: http://localhost:5000
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register a user (prototype)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lin,name,secret]
+              properties:
+                lin:
+                  type: string
+                name:
+                  type: string
+                secret:
+                  type: string
+                method:
+                  type: string
+      responses:
+        '201':
+          description: Created
+  /api/v1/auth/login:
+    post:
+      summary: Login (prototype)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lin,name,secret]
+      responses:
+        '200':
+          description: OK
+  /api/v1/sync/upload:
+    post:
+      summary: Upload queued client records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                queue:
+                  type: array
+      responses:
+        '200':
+          description: Sync results
+  /api/v1/recommendations/{lin}:
+    get:
+      summary: Get recommendations for a user
+      parameters:
+        - name: lin
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
