@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { mockLessons, mockQuizQuestions } from '@/data/mockData';
-import { enqueueAttempt } from '@/lib/offline';
+import { enqueueAttempt, QueueRecord } from '@/lib/offline';
 import { getCurrentUser } from '@/lib/auth';
 import { 
   ArrowLeft, 
@@ -36,7 +36,7 @@ const LearnPage = () => {
   const handleQuizComplete = async (score: number, total: number) => {
     const u = getCurrentUser();
     const client_id = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `att-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const record = {
+    const record: QueueRecord = {
       client_id,
       type: 'assessment_attempt',
       payload: {
@@ -46,7 +46,7 @@ const LearnPage = () => {
         total,
       },
       created_at: new Date().toISOString(),
-    } as any;
+    };
     try { await enqueueAttempt(record); } catch {}
   };
   
