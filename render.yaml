@@ -15,30 +15,10 @@ services:
       - key: AI_PROVIDER
         value: openai
       - key: AI_API_KEY
-        sync: false # User will be prompted to enter this in dashboard
-
-  # Frontend Service (React/Vite)
-  - type: web
-    name: learn2master-frontend
-    runtime: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_SERVER_URL
-        fromService:
-          type: web
-          name: learn2master-backend
-          property: url
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+        sync: false
 
 databases:
   - name: learn2master-db
-    plan: free # Render offers a free Postgres plan (expires after 30 days) or select paid
+    plan: free
     databaseName: learn2master
     user: learn2master
-
-# Note: If you are using Supabase (External DB), you can remove the 'databases' section 
-# and the 'fromDatabase' envVar, and instead prompt for DATABASE_URL.
