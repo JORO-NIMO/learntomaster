@@ -19,8 +19,8 @@ const ProfilePage: React.FC = () => {
     return null;
   }
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -42,8 +42,8 @@ const ProfilePage: React.FC = () => {
                 </Avatar>
                 <div>
                   <h1 className="text-2xl font-bold">{user.name}</h1>
-                  <p className="text-sm text-muted-foreground">LIN: {user.lin}</p>
-                  <Badge className="mt-2">{user.method === 'pin' ? 'PIN Protected' : 'Password Protected'}</Badge>
+                  <p className="text-sm text-muted-foreground">{user.lin ? `LIN: ${user.lin}` : user.email}</p>
+                  <Badge className="mt-2 capitalize">{user.role}</Badge>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
