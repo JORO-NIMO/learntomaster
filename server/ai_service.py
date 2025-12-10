@@ -180,3 +180,131 @@ def get_ai_service() -> AIService:
     if _ai_service is None:
         _ai_service = AIService()
     return _ai_service
+
+    async def generate_learner_profile(self, student_data: Dict) -> Dict:
+        """
+        Analyze assessment results to generate learner profile (DKT Logic)
+        
+        Args:
+            student_data: { 'assessments': [...], 'recent_activity': [...] }
+        """
+        prompt = """Analyze this student's performance data and generate a learner profile for Uganda's CBC context.
+        
+        Logic for Mastery:
+        - Consistent high scores (>80%) in complex tasks = High Mastery
+        - Mixed scores = Partial Mastery
+        - Consistently low scores (<50%) = Low Mastery
+        
+        Identify:
+        1. Current Mastery Level (0.0 - 1.0) for each competency detected
+        2. Preferred Learning Style (Visual/Auditory/Kinesthetic) based on content engagement
+        3. Strengths and Weaknesses
+        
+        Return JSON format:
+        {
+            "mastery_level": { "CODE": 0.0-1.0 },
+            "learning_style": "Visual|Auditory|Kinesthetic",
+            "strengths": ["..."],
+            "weaknesses": ["..."]
+        }
+        """
+        
+        messages = [
+            {"role": "user", "content": f"{prompt}\n\nStudent Data: {json.dumps(student_data)}"}
+        ]
+        
+        response = await self.chat(messages, system_prompt="You are an expert Educational Data Analyst for CBC.")
+        return self._parse_json_response(response)
+
+    async def adapt_content(self, content: str, profile: Dict, competency: str) -> Dict:
+        """
+        Adapt content based on learner profile
+        """
+        mastery = profile.get('mastery_level', {}).get(competency, 0.5)
+        style = profile.get('learning_style', 'Visual')
+        
+        prompt = f"""Adapt the following educational content for a student with:
+        - Mastery Level: {mastery} (0.0=Beginner, 1.0=Expert)
+        - Learning Style: {style}
+        - Context: Uganda CBC Secondary School
+        
+        Adaptation Rules:
+        - If Mastery < 0.4: Simplify language, use local analogies (e.g., farming, market), focus on basics.
+        - If Mastery > 0.7: Add critical thinking questions, project-based tasks, real-world application.
+        - If Visual: Emphasize diagrams, charts, mental imagery.
+        
+        Return JSON:
+        {{
+            "title": "Adapted Title",
+            "content": "The adapted text...",
+            "complexity_level": "Low|Medium|High",
+            "suggested_activities": ["activity 1", "activity 2"]
+        }}
+        """
+        
+        messages = [{"role": "user", "content": f"{prompt}\n\nOriginal Content: {content}"}]
+        response = await self.chat(messages, system_prompt="You are an expert CBC Curriculum Specialist.")
+        return self._parse_json_response(response)
+
+    async def generate_assessment(self, topic: str, competency: str, difficulty: int) -> Dict:
+        """
+        Generate real-time formative assessment
+        """
+        prompt = f"""Generate a formative assessment question for:
+        - Topic: {topic}
+        - Competency Code: {competency}
+        - Difficulty: {difficulty}/5
+        - Context: Uganda CBC
+        
+        The question must test APPLICATION of knowledge, not just recall.
+        
+        Return JSON:
+        {{
+            "question": "The question text",
+            "type": "mcq",
+            "options": {{ "A": "...", "B": "...", "C": "...", "D": "..." }},
+            "correct_answer": "A",
+            "explanation": "Why A is correct..."
+        }}
+        """
+        
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.chat(messages, system_prompt="You are an expert Assessment Creator.")
+        return self._parse_json_response(response)
+
+    async def get_recommendations(self, profile: Dict, recent_gap: str) -> List[Dict]:
+        """
+        Recommend remedial content for a specific gap
+        """
+        prompt = f"""Suggest 3 remedial activities for a student struggling with specific competency gap: {recent_gap}.
+        Student Profile: {json.dumps(profile)}
+        
+        Focus on low-resource, offline-friendly activities (textbooks, practical experiments, peer discussion).
+        
+        Return JSON List:
+        [
+            {{
+                "title": "Activity Title",
+                "type": "exercise|reading|project",
+                "description": "..."
+            }}
+        ]
+        """
+        
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.chat(messages, system_prompt="You are a Personal Learning Advisor.")
+        parsed = self._parse_json_response(response)
+        return parsed if isinstance(parsed, list) else [parsed]
+
+    def _parse_json_response(self, response: str):
+        """Helper to extract JSON from AI response"""
+        try:
+            # strip markdown code blocks if present
+            clean = response.replace('```json', '').replace('```', '').strip()
+            return json.loads(clean)
+        except Exception:
+            return {"error": "Failed to parse AI response", "raw": response}
+
+    def _mock_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
+        """Mock response for testing without API usage"""
+        return "This is a mock AI response. Configure AI_PROVIDER to 'openai' or 'gemini' for real responses."

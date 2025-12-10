@@ -537,6 +537,128 @@ def recommendations(lin):
     
     return jsonify({'lin': lin, 'recommendations': recs})
 
+# ==================== AI ADAPTIVE LEARNING ====================
+
+@app.route('/api/v1/ai/profile', methods=['POST'])
+@require_auth
+async def ai_generate_profile(user_data):
+    """Generate or update learner profile"""
+    user_id = user_data.get('user_id')
+    ai = get_ai_service()
+    
+    # Fetch recent assessment results
+    res = db.session.execute(text('''
+        SELECT ar.score, a.type, c.code as competency
+        FROM assessment_results ar
+        JOIN assessments a ON ar.assessment_id = a.id
+        JOIN competencies c ON a.competency_id = c.id
+        WHERE ar.student_id = :uid
+        ORDER BY ar.taken_at DESC LIMIT 20
+    '''), {'uid': user_id})
+    assessments = [dict_from_row(row) for row in res.fetchall()]
+    
+    profile = await ai.generate_learner_profile({
+        'assessments': assessments,
+        'recent_activity': [] # Add activity logs if available
+    })
+    
+    # Save to database
+    db.session.execute(text('''
+        INSERT INTO learner_profiles (user_id, mastery_level, learning_style, strengths, weaknesses, last_updated)
+        VALUES (:uid, :mastery, :style, :str, :weak, :now)
+        ON CONFLICT(user_id) DO UPDATE SET
+            mastery_level = excluded.mastery_level,
+            learning_style = excluded.learning_style,
+            strengths = excluded.strengths,
+            weaknesses = excluded.weaknesses,
+            last_updated = excluded.last_updated
+    '''), {
+        'uid': user_id,
+        'mastery': json.dumps(profile.get('mastery_level', {})),
+        'style': profile.get('learning_style'),
+        'str': profile.get('strengths', []),
+        'weak': profile.get('weaknesses', []),
+        'now': datetime.utcnow()
+    })
+    db.session.commit()
+    
+    return jsonify(profile)
+
+@app.route('/api/v1/ai/adapt', methods=['POST'])
+@require_auth
+async def ai_adapt_content(user_data):
+    """Adapt specific content for the user"""
+    user_id = user_data.get('user_id')
+    data = request.json or {}
+    content = data.get('content')
+    competency_code = data.get('competency_code')
+    
+    if not content or not competency_code:
+        return jsonify({'error': 'Missing content or competency_code'}), 400
+        
+    # Get user profile
+    res = db.session.execute(text('SELECT mastery_level, learning_style FROM learner_profiles WHERE user_id=:uid'), {'uid': user_id})
+    row = res.fetchone()
+    if not row:
+        profile = {}
+    else:
+        profile = dict_from_row(row)
+        
+    ai = get_ai_service()
+    adapted = await ai.adapt_content(content, profile, competency_code)
+    
+    return jsonify(adapted)
+
+@app.route('/api/v1/ai/assess', methods=['POST'])
+@require_auth
+async def ai_generate_assessment(user_data):
+    """Generate a quick formative assessment"""
+    data = request.json or {}
+    topic = data.get('topic')
+    competency = data.get('competency') # code
+    difficulty = data.get('difficulty', 3)
+    
+    if not topic or not competency:
+        return jsonify({'error': 'Missing topic or competency'}), 400
+        
+    ai = get_ai_service()
+    assessment = await ai.generate_assessment(topic, competency, difficulty)
+    
+    return jsonify(assessment)
+
+@app.route('/api/v1/system/migrate', methods=['POST'])
+def system_migrate():
+    """Run database migration script (Admin only - protected by secret)"""
+    secret = request.headers.get('X-Admin-Secret')
+    if secret != os.getenv('SECRET_KEY'):
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    try:
+        sql_path = os.path.join(os.path.dirname(__file__), 'database_schema_pg.sql')
+        with open(sql_path, 'r') as f:
+            sql_script = f.read()
+            
+        # Execute line by line or statement by statement?
+        # Supabase/Postgres via SQLAlchemy can execute chunks
+        # But split by ';' is risky if procedures have embedded semicolons
+        # For simple schema, usually okay.
+        
+        with db.engine.connect() as conn:
+            # We assume the file is standard SQL statements
+            # Just execute the whole thing? SQLAlchemy might not like multiple statements in one call
+            # Let's try executing it as a block if supported, or split purely.
+            
+            # Simple split for schema file
+            statements = sql_script.split(';')
+            for stmt in statements:
+                if stmt.strip():
+                    conn.execute(text(stmt))
+            conn.commit()
+            
+        return jsonify({'message': 'Migration executed successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     # Initialize database if using SQLite and file doesn't exist
     if 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']:
