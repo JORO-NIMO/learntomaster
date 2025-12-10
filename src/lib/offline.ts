@@ -59,7 +59,8 @@ export async function clearAllQueue() {
   });
 }
 
-export async function syncQueueToServer(serverUrl: string) {
+export async function syncQueueToServer(serverUrl?: string) {
+  const baseUrl = serverUrl || import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
   const items = await getAllQueued();
   if (!items.length) return { uploaded: 0 };
   const payload = { queue: items };
@@ -77,7 +78,7 @@ export async function syncQueueToServer(serverUrl: string) {
 
   while (attempts < maxAttempts) {
     try {
-      const res = await fetch(serverUrl.replace(/\/$/, '') + '/api/v1/sync/upload', {
+      const res = await fetch(baseUrl.replace(/\/$/, '') + '/api/v1/sync/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify(payload)
