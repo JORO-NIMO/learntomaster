@@ -8,10 +8,8 @@ interface DashboardLayoutProps {
 }
 
 import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { Button } from '@/components/ui/button'; // Assuming Button and Menu are needed for the new layout
-import { Menu } from 'lucide-react'; // Assuming Menu icon is needed
-import { UserNav } from '@/components/dashboard/UserNav'; // Assuming UserNav is needed
-import { AppSidebar } from '@/components/dashboard/AppSidebar'; // Assuming AppSidebar replaces DashboardSidebar
+import { Button } from '@/components/ui/button';
+import { Menu } from 'lucide-react';
 
 export const DashboardLayout = ({
   children,
@@ -35,7 +33,7 @@ export const DashboardLayout = ({
         "fixed inset-y-0 left-0 z-50 w-72 bg-card border-r transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:h-screen",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <AppSidebar />
+        <DashboardSidebar />
       </div>
 
       {/* Main Content */}
@@ -53,8 +51,6 @@ export const DashboardLayout = ({
           </Button>
 
           <div className="flex-1" />
-
-          <UserNav />
         </header>
 
         {/* Page Content */}
