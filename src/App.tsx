@@ -19,121 +19,131 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AuthoringTool from "./pages/AuthoringTool";
 import HelpDocs from "./pages/HelpDocs";
-import AuthRoute from "./components/AuthRoute";
+import Teachers from "./pages/Teachers";
+import Schools from "./pages/Schools";
 import OnlineSync from "./components/OnlineSync";
+import RoleBasedRoute from "./components/RoleBasedRoute";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <HelmetProvider>
+const App = () => {
+  return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+      <HelmetProvider>
+        <TooltipProvider>
+          <Toaster />
           {/* Register online event to sync queued items when connection is restored */}
           <OnlineSync />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/dashboard"
-              element={
-                <AuthRoute>
-                  <Dashboard />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/dashboard/subjects"
-              element={
-                <AuthRoute>
-                  <Subjects />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/dashboard/learn"
-              element={
-                <AuthRoute>
-                  <LearnPage />
-                </AuthRoute>
-              }
-            />
-            <Route path="/subjects" element={<Subjects />} />
-            <Route path="/subjects/:subjectId" element={<SubjectDetail />} />
-            <Route path="/subjects/:subjectId/topic/:topicId" element={<LearnPage />} />
-            <Route
-              path="/profile"
-              element={
-                <AuthRoute>
-                  <Profile />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <AuthRoute>
-                  <Settings />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <AuthRoute>
-                  <Analytics />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/referral"
-              element={
-                <AuthRoute>
-                  <Referral />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/teacher"
-              element={
-                <AuthRoute>
-                  <TeacherDashboard />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AuthRoute>
-                  <AdminPanel />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/authoring"
-              element={
-                <AuthRoute>
-                  <AuthoringTool />
-                </AuthRoute>
-              }
-            />
-            <Route
-              path="/help"
-              element={
-                <AuthRoute>
-                  <HelpDocs />
-                </AuthRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/teachers" element={<Teachers />} />
+              <Route path="/schools" element={<Schools />} />
+
+              {/* Student Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <Dashboard />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/subjects"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <Subjects />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/subject/:subjectId"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <SubjectDetail />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/learn/:lessonId"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <LearnPage />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/profile"
+                element={
+                  <RoleBasedRoute allowedRoles={['student', 'teacher', 'admin', 'school_admin']}>
+                    <Profile />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/settings"
+                element={
+                  <RoleBasedRoute allowedRoles={['student', 'teacher', 'admin', 'school_admin']}>
+                    <Settings />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/analytics"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <Analytics />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/referral"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <Referral />
+                  </RoleBasedRoute>
+                }
+              />
+
+              {/* Teacher Routes */}
+              <Route
+                path="/teacher"
+                element={
+                  <RoleBasedRoute allowedRoles={['teacher']}>
+                    <TeacherDashboard />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/authoring"
+                element={
+                  <RoleBasedRoute allowedRoles={['teacher', 'admin']}>
+                    <AuthoringTool />
+                  </RoleBasedRoute>
+                }
+              />
+
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <RoleBasedRoute allowedRoles={['admin', 'school_admin']}>
+                    <AdminPanel />
+                  </RoleBasedRoute>
+                }
+              />
+
+              <Route path="/help" element={<HelpDocs />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </HelmetProvider>
     </QueryClientProvider>
-  </HelmetProvider>
-);
+  );
+};
 
 export default App;

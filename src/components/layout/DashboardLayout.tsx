@@ -7,40 +7,66 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { Button } from '@/components/ui/button'; // Assuming Button and Menu are needed for the new layout
+import { Menu } from 'lucide-react'; // Assuming Menu icon is needed
+import { UserNav } from '@/components/dashboard/UserNav'; // Assuming UserNav is needed
+import { AppSidebar } from '@/components/dashboard/AppSidebar'; // Assuming AppSidebar replaces DashboardSidebar
+
+export const DashboardLayout = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar */}
-      <DashboardSidebar />
-      
-      {/* Mobile sidebar overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-foreground/50 z-40"
-          onClick={() => setIsMobileMenuOpen(false)}
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
-      
-      {/* Mobile sidebar */}
+
+      {/* Sidebar */}
       <div className={cn(
-        "lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-sidebar z-50 transform transition-transform duration-300",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 w-72 bg-card border-r transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:h-screen",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <DashboardSidebar />
+        <AppSidebar />
       </div>
-      
-      {/* Main content */}
-      <div className="lg:pl-64">
-        <DashboardHeader 
-          onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          isMobileMenuOpen={isMobileMenuOpen}
-        />
-        <main className="p-4 lg:p-8">
-          {children}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-72 transition-all duration-200 ease-in-out">
+        {/* Header */}
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+
+          <div className="flex-1" />
+
+          <UserNav />
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-6">
+          <div className="mx-auto max-w-6xl animate-fade-in">
+            {children}
+          </div>
         </main>
       </div>
+
+      <OfflineIndicator />
     </div>
   );
 };
+```
