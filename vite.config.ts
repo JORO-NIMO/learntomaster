@@ -70,6 +70,25 @@ export default defineConfig(({ mode }) => ({
               networkTimeoutSeconds: 3,
               expiration: { maxEntries: 30, maxAgeSeconds: 600 }
             }
+          },
+          {
+            urlPattern: /\/api\/v1\/(lessons|subjects|classes|assignments).*/i,
+            handler: 'NetworkFirst',
+            method: 'GET',
+            options: {
+              cacheName: 'api-content',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 } // 1 week
+            }
+          },
+          {
+            urlPattern: /\/api\/v1\/static\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            method: 'GET',
+            options: {
+              cacheName: 'static-assets',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 } // 30 days
+            }
           }
         ]
       }

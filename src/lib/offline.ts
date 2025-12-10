@@ -69,18 +69,37 @@ export async function syncQueueToServer(serverUrl: string) {
     try {
       const parsed = JSON.parse(tokenRaw);
       if (parsed?.token) authHeader = { Authorization: `Bearer ${parsed.token}` };
-    } catch {}
+    } catch { }
   }
-  const res = await fetch(serverUrl.replace(/\/$/, '') + '/api/v1/sync/upload', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeader },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error('Sync failed: ' + res.status);
-  const data = await res.json();
-  // clear items on success
-  for (const it of items) {
-    await clearQueueItem(it.client_id);
+  let attempts = 0;
+  const maxAttempts = 3;
+  let lastError;
+
+  while (attempts < maxAttempts) {
+    try {
+      const res = await fetch(serverUrl.replace(/\/$/, '') + '/api/v1/sync/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        if (res.status >= 500) throw new Error(`Server error ${res.status}`);
+        // Client errors (4xx) should probably not be retried blindly, but for now we throw to catch below
+        throw new Error(`Sync failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+      // clear items on success
+      for (const it of items) {
+        await clearQueueItem(it.client_id);
+      }
+      return { uploaded: items.length, serverResponse: data };
+    } catch (e) {
+      lastError = e;
+      attempts++;
+      if (attempts < maxAttempts) await new Promise(r => setTimeout(r, 1000 * attempts)); // Backoff
+    }
   }
-  return { uploaded: items.length, serverResponse: data };
+  throw lastError || new Error('Sync failed after retries');
 }

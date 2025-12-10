@@ -548,11 +548,38 @@ def sync_upload(auth_lin):
 
 @app.route('/api/v1/recommendations/<lin>', methods=['GET'])
 def recommendations(lin):
-    # Mock recommendations
-    recs = [
-        {'type':'lesson','itemId':'lesson-alg-3','reason':'Continue your progress in Algebra','priority':'high','estimatedTime':50},
-        {'type':'practice','itemId':'quiz-quadratic','reason':'Practice quadratic equations','priority':'medium','estimatedTime':20},
-    ]
+    conn = get_db()
+    cur = conn.cursor()
+    
+    # 1. Get recent activity
+    cur.execute('SELECT * FROM progress WHERE lin=? ORDER BY last_accessed DESC LIMIT 5', (lin,))
+    recent = cur.fetchall()
+    
+    recs = []
+    
+    # Logic: if last lesson not completed, suggest finishing it
+    if recent and recent[0]['completed'] < 100:
+        last = recent[0]
+        recs.append({
+            'type': 'lesson',
+            'itemId': last['lesson_id'],
+            'reason': f"Continue {last['subject']} where you left off",
+            'priority': 'high',
+            'estimatedTime': 15
+        })
+    
+    # Logic: Suggest next lesson in sequence (Mock sequence for now)
+    # In a real app, we'd look up the curriculum order
+    recs.append({
+        'type': 'practice',
+        'itemId': 'quiz-daily',
+        'reason': 'Daily practice to keep your streak',
+        'priority': 'medium',
+        'estimatedTime': 10
+    })
+    
+    conn.close()
+    
     return jsonify({'lin': lin, 'recommendations': recs})
 
 if __name__ == '__main__':
