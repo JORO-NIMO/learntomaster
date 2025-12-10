@@ -6,7 +6,7 @@ from sqlalchemy import text
 import os
 import json
 from datetime import datetime
-from .ai_service import get_ai_service
+from ai_service import get_ai_service
 import asyncio
 import jwt
 from functools import wraps
