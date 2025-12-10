@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 const navLinks = [
   { name: 'Subjects', href: '/subjects' },
+  { name: 'For Students', href: '/students' },
   { name: 'For Teachers', href: '/teachers' },
   { name: 'For Schools', href: '/schools' },
   { name: 'Pricing', href: '/pricing' },
@@ -15,13 +16,13 @@ export const Navbar = ({ variant = 'default' }: { variant?: 'default' | 'transpa
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isTransparent = variant === 'transparent';
-  
+
   return (
-    <nav 
+    <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isTransparent 
-          ? "bg-transparent" 
+        isTransparent
+          ? "bg-transparent"
           : "bg-background/95 backdrop-blur-lg border-b border-border shadow-sm"
       )}
     >
@@ -45,7 +46,7 @@ export const Navbar = ({ variant = 'default' }: { variant?: 'default' | 'transpa
               Learn2Master
             </span>
           </Link>
-          
+
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
@@ -54,8 +55,8 @@ export const Navbar = ({ variant = 'default' }: { variant?: 'default' | 'transpa
                 to={link.href}
                 className={cn(
                   "text-sm font-medium transition-colors animated-underline",
-                  isTransparent 
-                    ? "text-primary-foreground/80 hover:text-primary-foreground" 
+                  isTransparent
+                    ? "text-primary-foreground/80 hover:text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground",
                   location.pathname === link.href && (isTransparent ? "text-primary-foreground" : "text-foreground")
                 )}
@@ -64,25 +65,25 @@ export const Navbar = ({ variant = 'default' }: { variant?: 'default' | 'transpa
               </Link>
             ))}
           </div>
-          
+
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Button 
-              asChild 
+            <Button
+              asChild
               variant={isTransparent ? "hero-outline" : "ghost"}
               size="sm"
             >
               <Link to="/login">Log In</Link>
             </Button>
-            <Button 
-              asChild 
+            <Button
+              asChild
               variant={isTransparent ? "accent" : "default"}
               size="sm"
             >
               <Link to="/dashboard">Get Started</Link>
             </Button>
           </div>
-          
+
           {/* Mobile menu button */}
           <button
             className="md:hidden p-2"
@@ -96,7 +97,7 @@ export const Navbar = ({ variant = 'default' }: { variant?: 'default' | 'transpa
           </button>
         </div>
       </div>
-      
+
       {/* Mobile menu */}
       {isOpen && (
         <div className="md:hidden bg-background border-b border-border animate-slide-down">

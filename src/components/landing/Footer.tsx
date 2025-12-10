@@ -15,7 +15,7 @@ export const Footer = () => {
               <span className="font-display font-bold text-xl">Learn2Master</span>
             </Link>
             <p className="text-primary-foreground/70 text-sm leading-relaxed mb-6">
-              Uganda's leading AI-powered e-learning platform for A-Level students, 
+              Uganda's leading AI-powered e-learning platform for A-Level students,
               aligned with the NCDC Competence-Based Curriculum.
             </p>
             <div className="space-y-2 text-sm text-primary-foreground/70">
@@ -33,7 +33,7 @@ export const Footer = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Subjects */}
           <div>
             <h4 className="font-display font-semibold mb-4">Subjects</h4>
@@ -46,7 +46,7 @@ export const Footer = () => {
               <li><Link to="/subjects" className="hover:text-primary-foreground transition-colors">View All →</Link></li>
             </ul>
           </div>
-          
+
           {/* For Users */}
           <div>
             <h4 className="font-display font-semibold mb-4">For Users</h4>
@@ -54,11 +54,11 @@ export const Footer = () => {
               <li><Link to="/students" className="hover:text-primary-foreground transition-colors">For Students</Link></li>
               <li><Link to="/teachers" className="hover:text-primary-foreground transition-colors">For Teachers</Link></li>
               <li><Link to="/schools" className="hover:text-primary-foreground transition-colors">For Schools</Link></li>
-              <li><Link to="/parents" className="hover:text-primary-foreground transition-colors">For Parents</Link></li>
+
               <li><Link to="/pricing" className="hover:text-primary-foreground transition-colors">Pricing</Link></li>
             </ul>
           </div>
-          
+
           {/* Resources */}
           <div>
             <h4 className="font-display font-semibold mb-4">Resources</h4>
@@ -71,7 +71,7 @@ export const Footer = () => {
             </ul>
           </div>
         </div>
-        
+
         {/* Bottom bar */}
         <div className="border-t border-primary-foreground/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-primary-foreground/50">

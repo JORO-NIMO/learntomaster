@@ -209,3 +209,10 @@ export interface OfflineBundle {
   size: number; // bytes
   version: string;
 }
+
+export interface QueueRecord {
+  client_id: string;
+  type: string;
+  payload: any;
+  created_at: string;
+}
