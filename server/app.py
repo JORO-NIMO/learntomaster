@@ -8,6 +8,8 @@ import json
 from datetime import datetime
 from .ai_service import get_ai_service
 import asyncio
+import jwt
+from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -19,6 +21,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# Supabase Configuration
+SUPABASE_URL = os.getenv('SUPABASE_URL', '')
+SUPABASE_JWT_SECRET = os.getenv('SUPABASE_JWT_SECRET', '')
+
 def dict_from_row(row, cursor_description=None):
     """Convert SQLAlchemy row or raw cursor row to dict"""
     if hasattr(row, '_mapping'):
@@ -27,26 +33,62 @@ def dict_from_row(row, cursor_description=None):
         return dict(zip(row.keys(), row))
     return dict(row)
 
-def parse_bearer_lin(auth_header: str):
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return None
-    token = auth_header.split(' ', 1)[1].strip()
-    if not token.startswith('tok-'):
-        return None
+def verify_supabase_jwt(token: str):
+    """Verify Supabase JWT token and extract user data"""
     try:
-        payload = token[4:]
-        lin, _ts = payload.rsplit('-', 1)
-        return lin
-    except Exception:
+        if not SUPABASE_JWT_SECRET:
+            app.logger.error('SUPABASE_JWT_SECRET not configured')
+            return None
+        
+        # Decode and verify JWT
+        payload = jwt.decode(
+            token,
+            SUPABASE_JWT_SECRET,
+            algorithms=['HS256'],
+            options={'verify_aud': False}  # Supabase doesn't always set aud
+        )
+        
+        # Extract user ID from payload
+        user_id = payload.get('sub')
+        if not user_id:
+            app.logger.error('No user ID in JWT payload')
+            return None
+        
+        app.logger.info(f'JWT verified for user: {user_id}')
+        return {
+            'user_id': user_id,
+            'email': payload.get('email'),
+            'role': payload.get('role', 'authenticated'),
+            'payload': payload
+        }
+    except jwt.ExpiredSignatureError:
+        app.logger.error('JWT token expired')
+        return None
+    except jwt.InvalidTokenError as e:
+        app.logger.error(f'Invalid JWT token: {str(e)}')
+        return None
+    except Exception as e:
+        app.logger.error(f'JWT verification error: {str(e)}')
         return None
 
 def require_auth(f):
+    """Decorator to require valid Supabase JWT authentication"""
+    @wraps(f)
     def decorated(*args, **kwargs):
-        auth_lin = parse_bearer_lin(request.headers.get('Authorization', ''))
-        if not auth_lin:
-            return jsonify({'error': 'unauthorized'}), 401
-        return f(auth_lin, *args, **kwargs)
-    decorated.__name__ = f.__name__
+        auth_header = request.headers.get('Authorization', '')
+        
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid authorization header'}), 401
+        
+        token = auth_header.split(' ', 1)[1].strip()
+        user_data = verify_supabase_jwt(token)
+        
+        if not user_data:
+            return jsonify({'error': 'Invalid or expired token'}), 401
+        
+        # Pass user_data to the decorated function
+        return f(user_data, *args, **kwargs)
+    
     return decorated
 
 # ==================== AUTH ENDPOINTS ====================
