@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
+import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import Subjects from "./pages/Subjects";
 import SubjectDetail from "./pages/SubjectDetail";
 import LearnPage from "./pages/LearnPage";
@@ -15,7 +15,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Referral from "./pages/Referral";
-import TeacherDashboard from "./pages/TeacherDashboard";
+import TeacherDashboard from "./pages/dashboard/TeacherDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AuthoringTool from "./pages/AuthoringTool";
 import HelpDocs from "./pages/HelpDocs";
@@ -67,7 +67,7 @@ const App = () => {
                 path="/dashboard"
                 element={
                   <RoleBasedRoute allowedRoles={['student']}>
-                    <Dashboard />
+                    <StudentDashboard />
                   </RoleBasedRoute>
                 }
               />
