@@ -21,6 +21,16 @@ import AuthoringTool from "./pages/AuthoringTool";
 import HelpDocs from "./pages/HelpDocs";
 import Teachers from "./pages/Teachers";
 import Schools from "./pages/Schools";
+import Students from "./pages/Students";
+import Pricing from "./pages/Pricing";
+import Demo from "./pages/Demo";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Blog from "./pages/Blog";
+import Community from "./pages/Community";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import PublicSubjects from "./pages/PublicSubjects";
 import OnlineSync from "./components/OnlineSync";
 import RoleBasedRoute from "./components/RoleBasedRoute";
 
@@ -40,6 +50,17 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/teachers" element={<Teachers />} />
               <Route path="/schools" element={<Schools />} />
+              <Route path="/students" element={<Students />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/demo" element={<Demo />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/subjects" element={<PublicSubjects />} />
+              <Route path="/subjects/:id" element={<PublicSubjects />} /> {/* Redirect/Showcase for public */}
 
               {/* Student Routes */}
               <Route
