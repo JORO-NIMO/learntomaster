@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Helmet } from 'react-helmet-async';
-import { BookOpen, Users, CheckCircle, Clock, Alert, TrendingUp } from 'lucide-react';
+import { BookOpen, Users, CheckCircle, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 
 const TeacherDashboardPage: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState('all');
@@ -53,7 +53,7 @@ const TeacherDashboardPage: React.FC = () => {
                   <p className="text-sm text-muted-foreground">Pending Grading</p>
                   <p className="text-3xl font-bold mt-2">23</p>
                 </div>
-                <Alert className="w-8 h-8 text-orange-500" />
+                <AlertTriangle className="w-8 h-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
@@ -125,7 +125,7 @@ const TeacherDashboardPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Alert className="w-5 h-5 text-orange-500" />
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
               Students Needing Attention
             </CardTitle>
           </CardHeader>
