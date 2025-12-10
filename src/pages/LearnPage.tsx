@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import AIAssistant from '@/components/learning/AIAssistant';
 import { Progress } from '@/components/ui/progress';
 import { mockLessons, mockQuizQuestions } from '@/data/mockData';
-import { enqueueAttempt, QueueRecord } from '@/lib/offline';
+import { enqueueAttempt } from '@/lib/offline';
+import { QueueRecord } from '@/types';
 import { getCurrentUser } from '@/lib/auth';
 import { lessonService, Lesson } from '@/lib/lessonService';
 import {
