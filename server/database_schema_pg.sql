@@ -159,3 +159,73 @@ CREATE INDEX IF NOT EXISTS idx_progress_lin ON progress(lin);
 CREATE INDEX IF NOT EXISTS idx_ai_conversations_session ON ai_conversations(session_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_lin ON bookmarks(lin);
 CREATE INDEX IF NOT EXISTS idx_notes_lin ON notes(lin);
+
+-- =============================================
+-- CBC & AI ADAPTIVE LEARNING MODULES
+-- =============================================
+
+-- Competencies (CBC Learning Outcomes)
+CREATE TABLE IF NOT EXISTS competencies (
+    id SERIAL PRIMARY KEY,
+    subject TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE, -- e.g., 'MTH-ALG-01'
+    description TEXT NOT NULL,
+    level TEXT NOT NULL, -- 'O-Level', 'A-Level'
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Learner Profiles (AI-generated)
+CREATE TABLE IF NOT EXISTS learner_profiles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    mastery_level JSONB DEFAULT '{}', -- { "MTH-ALG-01": 0.75, "PHY-MEC-02": 0.40 }
+    learning_style TEXT, -- 'Visual', 'Auditory', 'Kinesthetic'
+    strengths TEXT[],
+    weaknesses TEXT[],
+    last_updated TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+-- Assessment Bank (AI-Generated or Teacher-Created)
+CREATE TABLE IF NOT EXISTS assessments (
+    id SERIAL PRIMARY KEY,
+    competency_id INTEGER REFERENCES competencies(id),
+    question TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'mcq', 'short_answer', 'project'
+    options JSONB, -- For MCQs
+    correct_answer TEXT,
+    difficulty_level INTEGER DEFAULT 1, -- 1-5
+    created_by INTEGER REFERENCES users(id), -- Null if AI
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Assessment Results (Tracking Progress)
+CREATE TABLE IF NOT EXISTS assessment_results (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES users(id),
+    assessment_id INTEGER NOT NULL REFERENCES assessments(id),
+    score INTEGER NOT NULL, -- 0-100
+    response TEXT,
+    feedback TEXT, -- AI generated feedback
+    taken_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Recommendations (AI Suggested Content)
+CREATE TABLE IF NOT EXISTS recommendations (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES users(id),
+    competency_id INTEGER REFERENCES competencies(id),
+    title TEXT NOT NULL,
+    content_type TEXT NOT NULL, -- 'video', 'summary', 'exercise', 'project'
+    content_url TEXT,
+    reason TEXT, -- Why this was recommended
+    status TEXT DEFAULT 'pending', -- 'pending', 'completed', 'dismissed'
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for CBC modules
+CREATE INDEX IF NOT EXISTS idx_competencies_subject ON competencies(subject);
+CREATE INDEX IF NOT EXISTS idx_learner_profiles_user ON learner_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_results_student ON assessment_results(student_id);
+CREATE INDEX IF NOT EXISTS idx_recommendations_student ON recommendations(student_id);
