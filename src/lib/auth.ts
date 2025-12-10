@@ -90,7 +90,7 @@ async function deriveVerifier(secret: string, saltB64: string) {
     ['deriveBits']
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: 150_000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations: 150_000, hash: 'SHA-256', length: 256 } as any,
     keyMaterial,
     256
   );

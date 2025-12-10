@@ -80,6 +80,34 @@ Edit `.env` as needed:
 VITE_SERVER_URL=http://localhost:5000
 ```
 
+
+## Browser Support
+
+This application is designed to run on all modern browsers, including:
+- Google Chrome (Desktop & Mobile)
+- Mozilla Firefox
+- Microsoft Edge
+- Safari (macOS & iOS)
+- Opera
+
+We use standard web technologies and polyfills where necessary to ensure broad compatibility (including fixes for cryptographic operations like PBKDF2).
+
+## AI Service Setup
+
+To enable the AI features (OpenAI, Gemini, Anthropic), you must install the additional python dependencies:
+
+```bash
+cd server
+pip install -r requirements.txt
+```
+
+Then, configure your API keys in the `.env` file (or system environment variables):
+
+```env
+AI_PROVIDER=openai  # or gemini, anthropic
+AI_API_KEY=your_api_key_here
+```
+
 ## Troubleshooting
 
 -   **Port Conflicts**: If port 5000 or 8080 is in use, the applications may fail to start.
