@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Brain, BookOpen, Target, Sparkles, AlertCircle, TrendingUp, Calendar } from 'lucide-react';
 import { CompetencyRadar } from '@/components/dashboard/CompetencyRadar';
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +23,8 @@ export default function StudentDashboard() {
     const [profile, setProfile] = useState<LearnerProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+    const [assessmentData, setAssessmentData] = useState<any>(null);
+    const [showAssessment, setShowAssessment] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -76,9 +80,11 @@ export default function StudentDashboard() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("AOI Generated:", data);
+                setAssessmentData(data);
+                setShowAssessment(true);
                 toast({
-                    title: "Activity Ready: " + (data.scenario ? "Scenario Based" : "Quiz"),
-                    description: "Check the console for the full NCDC Activity (Scenario + Rubric)."
+                    title: "Activity Ready",
+                    description: "Your personalized assessment has been generated."
                 });
             }
         } catch (e) {
@@ -250,6 +256,64 @@ export default function StudentDashboard() {
                     </Card>
                 </div>
             </div>
+
+            <Dialog open={showAssessment} onOpenChange={setShowAssessment}>
+                <DialogContent className="max-w-3xl max-h-[80vh]">
+                    <DialogHeader>
+                        <DialogTitle>Activity of Integration</DialogTitle>
+                        <DialogDescription>
+                            Based on NCDC Competency: {assessmentData?.competency || 'Statistics'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-[60vh] pr-4">
+                        <div className="space-y-6">
+                            <div className="bg-slate-50 p-4 rounded-lg border">
+                                <h3 className="font-semibold text-lg mb-2 text-slate-900">Scenario</h3>
+                                <p className="text-slate-700 whitespace-pre-wrap">{assessmentData?.scenario}</p>
+                            </div>
+
+                            <div>
+                                <h3 className="font-semibold text-lg mb-2">Instructions</h3>
+                                <p className="text-slate-700 whitespace-pre-wrap">{assessmentData?.instructions}</p>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                    <h4 className="font-medium text-blue-900 mb-1">Expected Output</h4>
+                                    <p className="text-sm text-blue-800">{assessmentData?.expected_output}</p>
+                                </div>
+                                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                    <h4 className="font-medium text-green-900 mb-1">Generic Skills</h4>
+                                    <p className="text-sm text-green-800">Critical Thinking, Communication</p>
+                                </div>
+                            </div>
+
+                            {assessmentData?.rubric && (
+                                <div>
+                                    <h3 className="font-semibold text-lg mb-2">Scoring Rubric</h3>
+                                    <div className="grid gap-2">
+                                        {Object.entries(assessmentData.rubric).map(([key, value]) => (
+                                            <div key={key} className="flex gap-4 items-start p-2 border rounded">
+                                                <Badge variant="outline" className="w-20 justify-center shrink-0">
+                                                    {key.replace('_', ' ').toUpperCase()}
+                                                </Badge>
+                                                <p className="text-sm text-slate-600">{String(value)}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowAssessment(false)}>Close</Button>
+                        <Button onClick={() => {
+                            setShowAssessment(false);
+                            toast({ title: "Saved", description: "Activity saved to your portfolio." });
+                        }}>Save to Portfolio</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

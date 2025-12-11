@@ -503,18 +503,18 @@ Your role is to:
         
         # Pattern matching for common questions
         if 'quadratic' in last_message or 'equation' in last_message:
-            return \"\"\"A quadratic equation is in the form ax² + bx + c = 0.
+            return """A quadratic equation is in the form ax² + bx + c = 0.
 
 To solve it, you can use:
 1. **Factoring** - if the equation can be factored easily
 2. **Quadratic formula**: x = (-b ± √(b²-4ac)) / 2a
 3. **Completing the square**
 
-Would you like me to show you a step-by-step example?\"\"\"
+Would you like me to show you a step-by-step example?"""
         
         elif 'help' in last_message or 'explain' in last_message:
             subject = context.get('subject', 'Mathematics') if context else 'Mathematics'
-            return f\"\"\"I'm here to help you with {subject}! 
+            return f"""I'm here to help you with {subject}! 
 
 I can:
 - Explain concepts step-by-step
@@ -522,21 +522,21 @@ I can:
 - Answer questions about the lesson
 - Provide practice problems
 
-What specific topic would you like me to explain?\"\"\"
+What specific topic would you like me to explain?"""
         
         elif 'practice' in last_message or 'quiz' in last_message:
-            return \"\"\"Great! Practice is key to mastery. Let me create a practice problem for you:
+            return """Great! Practice is key to mastery. Let me create a practice problem for you:
 
 **Problem**: If f(x) = 2x² + 3x - 5, find f(3).
 
-Take your time to solve it, then I'll guide you through the solution!\"\"\"
+Take your time to solve it, then I'll guide you through the solution!"""
         
         else:
-            return f\"\"\"That's a great question! Based on what we're studying, let me explain...
+            return f"""That's a great question! Based on what we're studying, let me explain...
 
 {last_message[:50]}... - I understand you're asking about this topic. 
 
-To give you the best answer, could you provide more context about which specific part you'd like me to clarify?\"\"\"
+To give you the best answer, could you provide more context about which specific part you'd like me to clarify?"""
 
 # Singleton instance
 _ai_service = None
