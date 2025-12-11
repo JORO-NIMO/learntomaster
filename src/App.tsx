@@ -15,6 +15,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Referral from "./pages/Referral";
+import StudyHub from "./pages/dashboard/StudyHub";
+import CareerCompass from "./pages/dashboard/CareerCompass";
 import TeacherDashboard from "./pages/dashboard/TeacherDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AuthoringTool from "./pages/AuthoringTool";
@@ -68,6 +70,22 @@ const App = () => {
                 element={
                   <RoleBasedRoute allowedRoles={['student']}>
                     <StudentDashboard />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/study-hub"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <StudyHub />
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/career"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <CareerCompass />
                   </RoleBasedRoute>
                 }
               />
