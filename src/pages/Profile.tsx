@@ -111,9 +111,6 @@ const ProfilePage: React.FC = () => {
                     </Button>
                 )}
               </div>
-
-                {isEditing ? 'Cancel' : 'Edit'}
-              </Button>
             </div>
           </CardHeader>
         </Card>
