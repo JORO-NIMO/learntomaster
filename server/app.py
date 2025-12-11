@@ -4,6 +4,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import os
+import sys
+# Ensure server directory is in python path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import json
 from datetime import datetime
 from ai_service import get_ai_service
