@@ -23,7 +23,7 @@ def init_database():
     # Execute schema (CREATE IF NOT EXISTS is idempotent)
     cur.executescript(schema_sql)
     
-    print("✓ Database schema initialized successfully")
+    print("[OK] Database schema initialized successfully")
     
     # Show table count
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")

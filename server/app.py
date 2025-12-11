@@ -6,7 +6,7 @@ from sqlalchemy import text
 import os
 import json
 from datetime import datetime
-from .ai_service import get_ai_service
+from ai_service import get_ai_service
 import asyncio
 import jwt
 import jwt
@@ -768,7 +768,7 @@ if __name__ == '__main__':
             
         with app.app_context():
             if start_init:
-                from scripts.init_db import init_database
+                from .scripts.init_db import init_database
                 init_database()
                 
     app.run(host='0.0.0.0', port=5000, debug=True)

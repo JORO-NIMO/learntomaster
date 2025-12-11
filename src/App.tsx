@@ -35,6 +35,7 @@ import Terms from "./pages/Terms";
 import PublicSubjects from "./pages/PublicSubjects";
 import OnlineSync from "./components/OnlineSync";
 import RoleBasedRoute from "./components/RoleBasedRoute";
+import { DashboardLayout } from "./components/layout/DashboardLayout";
 
 const queryClient = new QueryClient();
 
@@ -69,7 +70,9 @@ const App = () => {
                 path="/dashboard"
                 element={
                   <RoleBasedRoute allowedRoles={['student']}>
-                    <StudentDashboard />
+                    <DashboardLayout>
+                      <StudentDashboard />
+                    </DashboardLayout>
                   </RoleBasedRoute>
                 }
               />
@@ -77,7 +80,9 @@ const App = () => {
                 path="/dashboard/study-hub"
                 element={
                   <RoleBasedRoute allowedRoles={['student']}>
-                    <StudyHub />
+                    <DashboardLayout>
+                      <StudyHub />
+                    </DashboardLayout>
                   </RoleBasedRoute>
                 }
               />
@@ -85,7 +90,9 @@ const App = () => {
                 path="/dashboard/career"
                 element={
                   <RoleBasedRoute allowedRoles={['student']}>
-                    <CareerCompass />
+                    <DashboardLayout>
+                      <CareerCompass />
+                    </DashboardLayout>
                   </RoleBasedRoute>
                 }
               />
