@@ -52,12 +52,41 @@ export default function StudentDashboard() {
 
     const generateAssessment = async () => {
         setGenerating(true);
-        toast({ title: "AI is creating your assessment", description: "Analyzing your gaps..." });
-        // Simulate AI delay
-        setTimeout(() => {
+        toast({ title: "AI is creating your Activity of Integration", description: "Generating NCDC Scenario..." });
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/assess`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topic: 'Statistics',
+                    competency: 'MTH-STAT-01',
+                    difficulty: 2
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Show result in a nice modal (using state for now via simple alert/toast expansion or state var)
+                // For now, let's just log it and show a summary toast, but ideally we setAssessmentData(data)
+                console.log("AOI Generated:", data);
+                toast({
+                    title: "Activity Ready: " + (data.scenario ? "Scenario Based" : "Quiz"),
+                    description: "Check the console for the full NCDC Activity (Scenario + Rubric)."
+                });
+            }
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Error", variant: "destructive" });
+        } finally {
             setGenerating(false);
-            toast({ title: "Assessment Ready", description: "Topic: Algebra (O-Level)" });
-        }, 2000);
+        }
     };
 
     if (loading) {

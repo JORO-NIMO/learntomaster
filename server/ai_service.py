@@ -60,8 +60,14 @@ class AIService:
             return await self._call_gemini(messages, system_prompt)
         elif self.provider == 'anthropic':
             return await self._call_anthropic(messages, system_prompt)
-        else:
+        elif self.provider == 'anthropic':
+            return await self._call_anthropic(messages, system_prompt)
+        # FORCE MOCK IF NO KEY, BUT TRY TO WARN
+        if not self.api_key or self.api_key == "change-me":
+            print("WARNING: No valid API Key found. Returning mock data.")
             return self._mock_response(messages, context)
+        # Fallback to OpenAI if key exists but provider obscure? Default to OpenAI.
+        return await self._call_openai(messages, system_prompt)
     
     def _build_system_prompt(self, context: Optional[Dict] = None) -> str:
         """Build system prompt based on context"""
@@ -248,28 +254,66 @@ def get_ai_service() -> AIService:
 
     async def generate_assessment(self, topic: str, competency: str, difficulty: int) -> Dict:
         """
-        Generate real-time formative assessment
+        Generate an NCDC-aligned 'Activity of Integration' (AOI)
+        Context: Uganda Lower Secondary Curriculum (New CBC)
         """
-        prompt = f"""Generate a formative assessment question for:
-        - Topic: {topic}
-        - Competency Code: {competency}
-        - Difficulty: {difficulty}/5
-        - Context: Uganda CBC
+        prompt = f"""Generate a valid NCDC CBC 'Activity of Integration' (AOI) for:
+        - Subject/Topic: {topic}
+        - Competency: {competency}
+        - Level: Senior {difficulty} (S1-S4)
         
-        The question must test APPLICATION of knowledge, not just recall.
+        CRITICAL NCDC REQUIREMENTS:
+        1. SCENARIO: Must be a relatable Ugandan context (e.g., local market, farming, transport, health center, community meetings).
+        2. PROBLEM: A clear challenge needing a solution.
+        3. PRODUCT/OUTPUT: What the student must create (e.g., A budget, A poster, A written speech, A model).
+        4. GENERIC SKILLS: Target 1-2 skills (Critical Thinking, Communication).
         
-        Return JSON:
+        Return STRICT JSON:
         {{
-            "question": "The question text",
-            "type": "mcq",
-            "options": {{ "A": "...", "B": "...", "C": "...", "D": "..." }},
-            "correct_answer": "A",
-            "explanation": "Why A is correct..."
+            "scenario": "Detailed story text...",
+            "instructions": "Step-by-step instructions for the student...",
+            "expected_output": "Description of the final product...",
+            "rubric": {{
+                 "score_1": "Basis descriptor (Recall)",
+                 "score_2": "Moderate descriptor (Application)",
+                 "score_3": "High descriptor (Coherent/Justified)"
+            }},
+            "support_files": []
         }}
         """
         
         messages = [{"role": "user", "content": prompt}]
-        response = await self.chat(messages, system_prompt="You are an expert Assessment Creator.")
+        response = await self.chat(messages, system_prompt="You are an expert NCDC Curriculum Developer.")
+        return self._parse_json_response(response)
+
+    async def generate_learner_profile(self, student_data: Dict) -> Dict:
+        """
+        Analyze mastery using NCDC 1, 2, 3 scale
+        """
+        prompt = """Analyze student performance based on NCDC Competency Scoring (1, 2, 3).
+        
+        Data: {student_data}
+        
+        Derive:
+        1. Average Score per Competency (aiming for 3.0).
+        2. Generic Skills acquisition (e.g., if they do well in projects -> 'Creativity').
+        3. Values exhibited (e.g., 'Responsibility' if consistent).
+        
+        Return JSON:
+        {{
+            "mastery_level": {{ "CODE": 2.5, ... }}, 
+            "competency_descriptors": {{ "CODE": "Achieved level 2: Can explain but lacks justification" }},
+            "learning_style": "Visual/Auditory/Kinesthetic",
+            "strengths": ["Critical Thinking", "Communication"],
+            "gaps": ["Problem Solving in novel contexts"]
+        }}
+        """
+        
+        messages = [
+            {"role": "user", "content": f"{prompt}"}
+        ]
+        
+        response = await self.chat(messages, system_prompt="You are a Senior Teacher at a Ugandan Secondary School.")
         return self._parse_json_response(response)
 
     async def get_recommendations(self, profile: Dict, recent_gap: str) -> List[Dict]:
