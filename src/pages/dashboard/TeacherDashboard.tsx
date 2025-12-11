@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, AlertTriangle, TrendingUp, BookOpen } from 'lucide-react';
+import { Users, AlertTriangle, TrendingUp, BookOpen, Loader2, Sparkles } from 'lucide-react';
 
 export default function TeacherDashboard() {
     const atRiskStudents = [
@@ -11,6 +11,18 @@ export default function TeacherDashboard() {
         { name: "Mike Johnson", lin: "1012", risk: "Medium", gap: "Chemistry", attendance: "90%" },
     ];
 
+    const [generating, setGenerating] = React.useState(false);
+
+    const generateLessonPlan = async () => {
+        setGenerating(true);
+        // Call API /api/v1/ai/plan/lesson
+        // For demo, just alert
+        setTimeout(() => {
+            setGenerating(false);
+            alert("Lesson Plan Generated! (Check API response)");
+        }, 2000);
+    };
+
     return (
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center">
@@ -18,7 +30,13 @@ export default function TeacherDashboard() {
                     <h1 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h1>
                     <p className="text-muted-foreground">Class Analytics & CBC Implementation</p>
                 </div>
-                <Button>Create Content</Button>
+                <div className="space-x-2">
+                    <Button onClick={generateLessonPlan} disabled={generating}>
+                        {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        AI Lesson Plan
+                    </Button>
+                    <Button>Create Content</Button>
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
