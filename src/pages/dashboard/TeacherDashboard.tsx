@@ -1,127 +1,196 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, AlertTriangle, TrendingUp, BookOpen, Loader2, Sparkles } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Users, BarChart3, BookOpen, GraduationCap, LayoutDashboard } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { schoolService } from '@/lib/schoolService';
+import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Helmet } from 'react-helmet-async';
 
-export default function TeacherDashboard() {
-    const atRiskStudents = [
-        { name: "John Doe", lin: "1001", risk: "High", gap: "Mathematics", attendance: "85%" },
-        { name: "Sarah Smith", lin: "1005", risk: "Medium", gap: "Physics", attendance: "92%" },
-        { name: "Mike Johnson", lin: "1012", risk: "Medium", gap: "Chemistry", attendance: "90%" },
-    ];
+// Import new components (relative to this file in dashboard/)
+import TeacherAnalytics from './TeacherAnalytics';
+import LessonPlanner from './LessonPlanner';
+import AssignmentManager from './AssignmentManager';
 
-    const [generating, setGenerating] = React.useState(false);
-
-    const generateLessonPlan = async () => {
-        setGenerating(true);
-        // Call API /api/v1/ai/plan/lesson
-        // For demo, just alert
-        setTimeout(() => {
-            setGenerating(false);
-            alert("Lesson Plan Generated! (Check API response)");
-        }, 2000);
-    };
-
-    return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h1>
-                    <p className="text-muted-foreground">Class Analytics & CBC Implementation</p>
-                </div>
-                <div className="space-x-2">
-                    <Button onClick={generateLessonPlan} disabled={generating}>
-                        {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                        AI Lesson Plan
-                    </Button>
-                    <Button>Create Content</Button>
-                </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">145</div>
-                        <p className="text-xs text-muted-foreground">Across 3 streams</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">At-Risk Students</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-destructive">12</div>
-                        <p className="text-xs text-muted-foreground">Needs intervention</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avg Mastery</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">72%</div>
-                        <p className="text-xs text-muted-foreground">Physics (Senior 3)</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Topic Completion</CardTitle>
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">8/12</div>
-                        <p className="text-xs text-muted-foreground">Topics covered this term</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>AI-Identified At-Risk Students</CardTitle>
-                    <CardDescription>Students showing consistent gaps in specific competencies</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Student Name</TableHead>
-                                <TableHead>LIN</TableHead>
-                                <TableHead>Primary Gap</TableHead>
-                                <TableHead>Risk Level</TableHead>
-                                <TableHead>Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {atRiskStudents.map((student) => (
-                                <TableRow key={student.lin}>
-                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                    <TableCell>{student.lin}</TableCell>
-                                    <TableCell>{student.gap}</TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-1 rounded-full text-xs ${student.risk === 'High' ? 'bg-destructive/20 text-destructive' : 'bg-yellow-500/20 text-yellow-600'
-                                            }`}>
-                                            {student.risk}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="sm">View Profile</Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
-    );
+// Simplified types for dashboard
+interface Class {
+  id: string;
+  name: string;
+  subject: string;
 }
+
+const TeacherDashboard = () => {
+  // State
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newClassName, setNewClassName] = useState('');
+  const [newClassSubject, setNewClassSubject] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const { toast } = useToast();
+
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const data = await schoolService.getClasses();
+        setClasses(data.classes || []);
+      } catch (e) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to load classes' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [toast]);
+
+  const handleCreateClass = async () => {
+    try {
+      await schoolService.createClass({ name: newClassName, subject: newClassSubject });
+      toast({ title: 'Class Created' });
+      setCreateOpen(false);
+      // Reload classes
+      const data = await schoolService.getClasses();
+      setClasses(data.classes || []);
+      setNewClassName('');
+      setNewClassSubject('');
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to create class' });
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <Helmet>
+        <title>Teacher Dashboard - Learn2Master</title>
+      </Helmet>
+
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Teacher Dashboard</h1>
+            <p className="text-muted-foreground">Monitor student progress and manage your classes</p>
+          </div>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Create New Class
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create New Class</DialogTitle>
+                <DialogDescription>
+                  Add a new class to your dashboard.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                    className="col-span-3"
+                    placeholder="Class Name"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="subject" className="text-right">
+                    Subject
+                  </Label>
+                  <Input
+                    id="subject"
+                    value={newClassSubject}
+                    onChange={(e) => setNewClassSubject(e.target.value)}
+                    className="col-span-3"
+                    placeholder="Subject"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCreateClass}>Create Class</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" /> Overview
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" /> Analytics
+            </TabsTrigger>
+            <TabsTrigger value="planning" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" /> Lesson Planner
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4" /> Assignments
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Classes Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {classes.map((cls) => (
+                <Card key={cls.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <CardTitle>{cls.name}</CardTitle>
+                    <CardDescription>{cls.subject}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Users className="mr-2 h-4 w-4" />
+                        0 Students
+                      </div>
+                    </div>
+                    <Button className="w-full" variant="secondary" asChild>
+                      <Link to={`/teacher/classes/${cls.id}`}>View Class</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {/* Add Class Card (Empty State) */}
+              {classes.length === 0 && !loading && (
+                <Card className="border-dashed flex flex-col items-center justify-center p-6 h-[200px]">
+                  <div className="text-center space-y-2">
+                    <h3 className="font-semibold">No classes yet</h3>
+                    <p className="text-sm text-muted-foreground">Create your first class to get started</p>
+                    <Button variant="outline" onClick={() => setCreateOpen(true)}>
+                      Create Class
+                    </Button>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <TeacherAnalytics />
+          </TabsContent>
+
+          <TabsContent value="planning">
+            <LessonPlanner />
+          </TabsContent>
+
+          <TabsContent value="assignments">
+            <AssignmentManager />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default TeacherDashboard;
