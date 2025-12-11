@@ -74,12 +74,11 @@ class AIService:
         base_prompt = """You are a helpful AI tutor for Learn2Master, an adaptive e-learning platform for A-Level students in Uganda following the NCDC CBC curriculum.
 
 Your role is to:
-- Answer student questions clearly and concisely
-- Explain concepts in simple terms
-- Provide step-by-step solutions
-- Encourage critical thinking
-- Adapt explanations to student's level
-- Reference curriculum standards when relevant"""
+- Act as a Socratic Tutor: Ask guiding questions to help the student discover the answer.
+- NEVER give the direct answer unless the student has tried 3 times.
+- Contextualize everything to Uganda (e.g., "Think about how we calculate profit in a local market").
+- Reference specific NCDC Competencies when providing feedback.
+- Promote Critical Thinking and Application over Recall."""
         
         if context:
             if context.get('subject'):
@@ -316,6 +315,117 @@ def get_ai_service() -> AIService:
         response = await self.chat(messages, system_prompt="You are a Senior Teacher at a Ugandan Secondary School.")
         return self._parse_json_response(response)
 
+    async def evaluate_submission(self, original_activity: Dict, student_response: str) -> Dict:
+        """
+        Mark student work against NCDC Rubrics
+        """
+        rubric = original_activity.get('rubric', {})
+        prompt = f"""Evaluate this student response based on the NCDC Competency Rubric.
+        
+        Assignment Scenario: {original_activity.get('scenario')}
+        Expected Output: {original_activity.get('expected_output')}
+        Rubric: {json.dumps(rubric)}
+        
+        Student Response: {student_response}
+        
+        Task:
+        1. Assign a Score (1=Basic, 2=Moderate, 3=High).
+        2. Identify specific strengths and gaps.
+        3. Detect if the student COPIED or used generic AI text (Anti-Cheating check).
+        4. Provide Socratic feedback guiding them to the next level.
+        
+        Return JSON:
+        {{
+            "score": 2,
+            "mastery_level": "Developing",
+            "feedback": "You identified the key problem, but... (Socratic hint)",
+            "integrity_flag": "clean|suspicious",
+            "remedial_task": "Try to explain WHY..."
+        }}
+        """
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.chat(messages, system_prompt="You are a strict but supportive NCDC Assessor.")
+        return self._parse_json_response(response)
+
+    async def simplify_content(self, text: str, level: str = "Senior 1") -> Dict:
+        """
+        Simplify complex text (notes/PDFs) for learners
+        """
+        prompt = f"""Simplify the following academic text for a {level} student in Uganda.
+        
+        Goals:
+        1. Break down complex jargon into simple terms.
+        2. Use local analogies.
+        3. Highlight key NCDC Competencies found in the text.
+        4. Create a 'Key Takeaways' bullet list.
+        
+        Text: {text[:4000]}... (truncated)
+        
+        Return JSON:
+        {{
+            "summary": "...",
+            "key_concepts": ["..."],
+            "analogies_used": ["..."],
+            "competency_tags": ["..."]
+        }}
+        """
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.chat(messages, system_prompt="You are an expert Educational Content Creator.")
+        return self._parse_json_response(response)
+
+    async def generate_lesson_plan(self, topic: str, duration: str, class_level: str) -> Dict:
+        """
+        Generate NCDC Scheme of Work / Lesson Plan
+        """
+        prompt = f"""Generate a 1-hour NCDC CBC Lesson Plan for:
+        - Class: {class_level}
+        - Topic: {topic}
+        - Duration: {duration} minutes
+        
+        Requirements:
+        1. Activity of Integration (AOI) as the core.
+        2. Generic Skills to be assessed.
+        3. Materials needed (Focus on low-cost/local materials).
+        4. Step-by-step Facilitator Guide (not 'Teaching', but 'Facilitating').
+        
+        Return JSON:
+        {{
+            "competency": "...",
+            "learning_outcome": "...",
+            "materials": ["..."],
+            "procedure": [
+                {{ "time": "10 min", "activity": "Introduction", "teacher_action": "...", "learner_action": "..." }}
+            ],
+            "assessment": "..."
+        }}
+        """
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.chat(messages, system_prompt="You are a Master Trainer for NCDC.")
+        return self._parse_json_response(response)
+
+    async def get_career_guidance(self, profile: Dict) -> Dict:
+        """
+        Map learner strengths to Career Pathways
+        """
+        prompt = f"""Analyze this learner profile and suggest Career Pathways relevant to Uganda's economy (Vision 2040).
+        
+        Profile: {json.dumps(profile)}
+        
+        Focus areas: Agriculture, ICT, Tourism, Oil & Gas, Medicine, Education, Entrepreneurship.
+        
+        Return JSON:
+        {{
+            "top_careers": [
+                {{ "title": "Agri-Tech Specialist", "match_score": 0.95, "reason": "Strong Bio & ICT skills..." }}
+            ],
+            "recommended_subjects": ["...", "..."],
+            "skill_gaps_to_fill": ["..."]
+        }}
+        """
+        messages = [{"role": "user", "content": prompt}]
+        response = await self.chat(messages, system_prompt="You are a Career Guidance Counselor.")
+        return self._parse_json_response(response)
+
     async def get_recommendations(self, profile: Dict, recent_gap: str) -> List[Dict]:
         """
         Recommend remedial content for a specific gap
@@ -339,6 +449,7 @@ def get_ai_service() -> AIService:
         response = await self.chat(messages, system_prompt="You are a Personal Learning Advisor.")
         parsed = self._parse_json_response(response)
         return parsed if isinstance(parsed, list) else [parsed]
+
 
     def _parse_json_response(self, response: str):
         """Helper to extract JSON from AI response"""

@@ -9,7 +9,10 @@ from datetime import datetime
 from .ai_service import get_ai_service
 import asyncio
 import jwt
+import jwt
 from functools import wraps
+import pypdf
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -639,6 +642,89 @@ async def ai_generate_assessment(user_data):
     assessment = await ai.generate_assessment(topic, competency, difficulty)
     
     return jsonify(assessment)
+
+
+
+@app.route('/api/v1/ai/mark', methods=['POST'])
+@require_auth
+async def ai_mark_submission(user_data):
+    """Mark a student's activity submission"""
+    data = request.json or {}
+    activity = data.get('activity') # The original AOI object
+    response_text = data.get('response')
+    
+    if not activity or not response_text:
+        return jsonify({'error': 'Missing activity or response'}), 400
+        
+    ai = get_ai_service()
+    result = await ai.evaluate_submission(activity, response_text)
+    
+    # Optionally save result to DB here
+    return jsonify(result)
+
+@app.route('/api/v1/ai/simplify', methods=['POST'])
+@require_auth
+async def ai_simplify_content(user_data):
+    """Simplify uploaded content or text"""
+    text_content = request.form.get('text', '')
+    level = request.form.get('level', 'Senior 1')
+    
+    # Handle file upload
+    if 'file' in request.files:
+        file = request.files['file']
+        if file.filename.endswith('.pdf'):
+            try:
+                # Read PDF from memory
+                pdf_bytes = file.read()
+                pdf_file = io.BytesIO(pdf_bytes)
+                reader = pypdf.PdfReader(pdf_file)
+                extracted = []
+                for page in reader.pages:
+                    extracted.append(page.extract_text())
+                text_content = "\n".join(extracted)
+            except Exception as e:
+                return jsonify({'error': f'Failed to process PDF: {str(e)}'}), 400
+    
+    if not text_content:
+        return jsonify({'error': 'No content provided'}), 400
+        
+    ai = get_ai_service()
+    result = await ai.simplify_content(text_content, level)
+    return jsonify(result)
+
+@app.route('/api/v1/ai/plan/lesson', methods=['POST'])
+@require_auth
+async def ai_plan_lesson(user_data):
+    """Generate Lesson Plan"""
+    data = request.json or {}
+    topic = data.get('topic')
+    duration = data.get('duration', '60')
+    level = data.get('class_level', 'Senior 1')
+    
+    if not topic:
+        return jsonify({'error': 'Missing topic'}), 400
+        
+    ai = get_ai_service()
+    plan = await ai.generate_lesson_plan(topic, duration, level)
+    return jsonify(plan)
+
+@app.route('/api/v1/ai/plan/career', methods=['POST'])
+@require_auth
+async def ai_career_guidance(user_data):
+    """Get Career Guidance based on profile"""
+    user_id = user_data.get('user_id')
+    
+    # Fetch profile from DB
+    res = db.session.execute(text('SELECT * FROM learner_profiles WHERE user_id=:uid'), {'uid': user_id})
+    row = res.fetchone()
+    if not row:
+        return jsonify({'error': 'Profile not found'}), 404
+    
+    profile = dict_from_row(row)
+    
+    ai = get_ai_service()
+    guidance = await ai.get_career_guidance(profile)
+    return jsonify(guidance)
 
 @app.route('/api/v1/system/migrate', methods=['POST'])
 def system_migrate():
