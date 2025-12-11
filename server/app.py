@@ -19,7 +19,21 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+
 db = SQLAlchemy(app)
+
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({
+        'status': 'online',
+        'message': 'Learn2Master API',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/api/v1/health',
+            'auth': '/api/v1/auth',
+            'ai': '/api/v1/ai'
+        }
+    })
 
 # Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
