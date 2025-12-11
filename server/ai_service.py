@@ -50,14 +50,6 @@ class AIService:
     ) -> str:
         """
         Send chat messages and get AI response
-        
-        Args:
-            messages: List of {role: 'user'|'assistant', content: str}
-            context: Optional context (current lesson, subject, etc.)
-            system_prompt: Optional system instructions
-        
-        Returns:
-            AI response text
         """
         # Build system prompt
         if not system_prompt:
@@ -70,12 +62,12 @@ class AIService:
             return await self._call_gemini(messages, system_prompt)
         elif self.provider == 'anthropic':
             return await self._call_anthropic(messages, system_prompt)
-        elif self.provider == 'anthropic':
-            return await self._call_anthropic(messages, system_prompt)
+        
         # FORCE MOCK IF NO KEY, BUT TRY TO WARN
         if not self.api_key or self.api_key == "change-me":
             print("WARNING: No valid API Key found. Returning mock data.")
             return self._mock_response(messages, context)
+        
         # Fallback to OpenAI if key exists but provider obscure? Default to OpenAI.
         return await self._call_openai(messages, system_prompt)
     
@@ -153,15 +145,10 @@ Your role is to:
         messages = [{"role": "user", "content": user_prompt}]
         
         try:
-            # In a real scenario, we'd call the specific provider directly to ensure JSON mode if supported
-            # For now, we rely on the chat method
             response_text = await self.chat(messages, system_prompt=system_prompt)
-            # Clean up JSON if needed (remove markdown code blocks)
-            response_text = response_text.replace('```json', '').replace('```', '').strip()
-            return json.loads(response_text)
+            return self._parse_json_response(response_text)
         except Exception as e:
             print(f"Error generating lesson plan: {e}")
-            # Return mock data on failure
             return {
                 "title": f"Lesson: {topic}",
                 "objectives": ["Understand key concepts", "Apply knowledge"],
@@ -183,8 +170,7 @@ Your role is to:
         
         try:
             response_text = await self.chat(messages, system_prompt=system_prompt)
-            response_text = response_text.replace('```json', '').replace('```', '').strip()
-            return json.loads(response_text)
+            return self._parse_json_response(response_text)
         except Exception as e:
             print(f"Error generating quiz: {e}")
             return []
@@ -196,91 +182,35 @@ Your role is to:
         
         messages = [{"role": "user", "content": user_prompt}]
         return await self.chat(messages, system_prompt=system_prompt)
-    
-    def _mock_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
-        """Generate mock AI response for testing"""
-        last_message = messages[-1]['content'].lower() if messages else ""
-        
-        # Pattern matching for common questions
-        if 'quadratic' in last_message or 'equation' in last_message:
-            return """A quadratic equation is in the form ax² + bx + c = 0.
-
-To solve it, you can use:
-1. **Factoring** - if the equation can be factored easily
-2. **Quadratic formula**: x = (-b ± √(b²-4ac)) / 2a
-3. **Completing the square**
-
-Would you like me to show you a step-by-step example?"""
-        
-        elif 'help' in last_message or 'explain' in last_message:
-            subject = context.get('subject', 'Mathematics') if context else 'Mathematics'
-            return f"""I'm here to help you with {subject}! 
-
-I can:
-- Explain concepts step-by-step
-- Help solve problems
-- Answer questions about the lesson
-- Provide practice problems
-
-What specific topic would you like me to explain?"""
-        
-        elif 'practice' in last_message or 'quiz' in last_message:
-            return """Great! Practice is key to mastery. Let me create a practice problem for you:
-
-**Problem**: If f(x) = 2x² + 3x - 5, find f(3).
-
-Take your time to solve it, then I'll guide you through the solution!"""
-        
-        else:
-            return f"""That's a great question! Based on what we're studying, let me explain...
-
-{last_message[:50]}... - I understand you're asking about this topic. 
-
-To give you the best answer, could you provide more context about which specific part you'd like me to clarify?"""
-
-# Singleton instance
-_ai_service = None
-
-def get_ai_service() -> AIService:
-    """Get or create AI service instance"""
-    global _ai_service
-    if _ai_service is None:
-        _ai_service = AIService()
-    return _ai_service
 
     async def generate_learner_profile(self, student_data: Dict) -> Dict:
         """
-        Analyze assessment results to generate learner profile (DKT Logic)
-        
-        Args:
-            student_data: { 'assessments': [...], 'recent_activity': [...] }
+        Analyze mastery using NCDC 1, 2, 3 scale
         """
-        prompt = """Analyze this student's performance data and generate a learner profile for Uganda's CBC context.
+        prompt = """Analyze student performance based on NCDC Competency Scoring (1, 2, 3).
         
-        Logic for Mastery:
-        - Consistent high scores (>80%) in complex tasks = High Mastery
-        - Mixed scores = Partial Mastery
-        - Consistently low scores (<50%) = Low Mastery
+        Data: {student_data}
         
-        Identify:
-        1. Current Mastery Level (0.0 - 1.0) for each competency detected
-        2. Preferred Learning Style (Visual/Auditory/Kinesthetic) based on content engagement
-        3. Strengths and Weaknesses
+        Derive:
+        1. Average Score per Competency (aiming for 3.0).
+        2. Generic Skills acquisition (e.g., if they do well in projects -> 'Creativity').
+        3. Values exhibited (e.g., 'Responsibility' if consistent).
         
-        Return JSON format:
-        {
-            "mastery_level": { "CODE": 0.0-1.0 },
-            "learning_style": "Visual|Auditory|Kinesthetic",
-            "strengths": ["..."],
-            "weaknesses": ["..."]
-        }
+        Return JSON:
+        {{
+            "mastery_level": {{ "CODE": 2.5, ... }}, 
+            "competency_descriptors": {{ "CODE": "Achieved level 2: Can explain but lacks justification" }},
+            "learning_style": "Visual/Auditory/Kinesthetic",
+            "strengths": ["Critical Thinking", "Communication"],
+            "gaps": ["Problem Solving in novel contexts"]
+        }}
         """
         
         messages = [
-            {"role": "user", "content": f"{prompt}\n\nStudent Data: {json.dumps(student_data)}"}
+            {"role": "user", "content": f"{prompt}"}
         ]
         
-        response = await self.chat(messages, system_prompt="You are an expert Educational Data Analyst for CBC.")
+        response = await self.chat(messages, system_prompt="You are a Senior Teacher at a Ugandan Secondary School.")
         return self._parse_json_response(response)
 
     async def adapt_content(self, content: str, profile: Dict, competency: str) -> Dict:
@@ -347,36 +277,6 @@ def get_ai_service() -> AIService:
         response = await self.chat(messages, system_prompt="You are an expert NCDC Curriculum Developer.")
         return self._parse_json_response(response)
 
-    async def generate_learner_profile(self, student_data: Dict) -> Dict:
-        """
-        Analyze mastery using NCDC 1, 2, 3 scale
-        """
-        prompt = """Analyze student performance based on NCDC Competency Scoring (1, 2, 3).
-        
-        Data: {student_data}
-        
-        Derive:
-        1. Average Score per Competency (aiming for 3.0).
-        2. Generic Skills acquisition (e.g., if they do well in projects -> 'Creativity').
-        3. Values exhibited (e.g., 'Responsibility' if consistent).
-        
-        Return JSON:
-        {{
-            "mastery_level": {{ "CODE": 2.5, ... }}, 
-            "competency_descriptors": {{ "CODE": "Achieved level 2: Can explain but lacks justification" }},
-            "learning_style": "Visual/Auditory/Kinesthetic",
-            "strengths": ["Critical Thinking", "Communication"],
-            "gaps": ["Problem Solving in novel contexts"]
-        }}
-        """
-        
-        messages = [
-            {"role": "user", "content": f"{prompt}"}
-        ]
-        
-        response = await self.chat(messages, system_prompt="You are a Senior Teacher at a Ugandan Secondary School.")
-        return self._parse_json_response(response)
-
     async def evaluate_submission(self, original_activity: Dict, student_response: str) -> Dict:
         """
         Mark student work against NCDC Rubrics
@@ -435,36 +335,6 @@ def get_ai_service() -> AIService:
         response = await self.chat(messages, system_prompt="You are an expert Educational Content Creator.")
         return self._parse_json_response(response)
 
-    async def generate_lesson_plan(self, topic: str, duration: str, class_level: str) -> Dict:
-        """
-        Generate NCDC Scheme of Work / Lesson Plan
-        """
-        prompt = f"""Generate a 1-hour NCDC CBC Lesson Plan for:
-        - Class: {class_level}
-        - Topic: {topic}
-        - Duration: {duration} minutes
-        
-        Requirements:
-        1. Activity of Integration (AOI) as the core.
-        2. Generic Skills to be assessed.
-        3. Materials needed (Focus on low-cost/local materials).
-        4. Step-by-step Facilitator Guide (not 'Teaching', but 'Facilitating').
-        
-        Return JSON:
-        {{
-            "competency": "...",
-            "learning_outcome": "...",
-            "materials": ["..."],
-            "procedure": [
-                {{ "time": "10 min", "activity": "Introduction", "teacher_action": "...", "learner_action": "..." }}
-            ],
-            "assessment": "..."
-        }}
-        """
-        messages = [{"role": "user", "content": prompt}]
-        response = await self.chat(messages, system_prompt="You are a Master Trainer for NCDC.")
-        return self._parse_json_response(response)
-
     async def get_career_guidance(self, profile: Dict) -> Dict:
         """
         Map learner strengths to Career Pathways
@@ -511,7 +381,6 @@ def get_ai_service() -> AIService:
         response = await self.chat(messages, system_prompt="You are a Personal Learning Advisor.")
         parsed = self._parse_json_response(response)
         return parsed if isinstance(parsed, list) else [parsed]
-
 
     def _parse_json_response(self, response: str):
         """Helper to extract JSON from AI response"""
@@ -629,5 +498,52 @@ def get_ai_service() -> AIService:
         return 0
 
     def _mock_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
-        """Mock response for testing without API usage"""
-        return "This is a mock AI response. Configure AI_PROVIDER to 'openai' or 'gemini' for real responses."
+        """Generate mock AI response for testing"""
+        last_message = messages[-1]['content'].lower() if messages else ""
+        
+        # Pattern matching for common questions
+        if 'quadratic' in last_message or 'equation' in last_message:
+            return \"\"\"A quadratic equation is in the form ax² + bx + c = 0.
+
+To solve it, you can use:
+1. **Factoring** - if the equation can be factored easily
+2. **Quadratic formula**: x = (-b ± √(b²-4ac)) / 2a
+3. **Completing the square**
+
+Would you like me to show you a step-by-step example?\"\"\"
+        
+        elif 'help' in last_message or 'explain' in last_message:
+            subject = context.get('subject', 'Mathematics') if context else 'Mathematics'
+            return f\"\"\"I'm here to help you with {subject}! 
+
+I can:
+- Explain concepts step-by-step
+- Help solve problems
+- Answer questions about the lesson
+- Provide practice problems
+
+What specific topic would you like me to explain?\"\"\"
+        
+        elif 'practice' in last_message or 'quiz' in last_message:
+            return \"\"\"Great! Practice is key to mastery. Let me create a practice problem for you:
+
+**Problem**: If f(x) = 2x² + 3x - 5, find f(3).
+
+Take your time to solve it, then I'll guide you through the solution!\"\"\"
+        
+        else:
+            return f\"\"\"That's a great question! Based on what we're studying, let me explain...
+
+{last_message[:50]}... - I understand you're asking about this topic. 
+
+To give you the best answer, could you provide more context about which specific part you'd like me to clarify?\"\"\"
+
+# Singleton instance
+_ai_service = None
+
+def get_ai_service() -> AIService:
+    """Get or create AI service instance"""
+    global _ai_service
+    if _ai_service is None:
+        _ai_service = AIService()
+    return _ai_service
