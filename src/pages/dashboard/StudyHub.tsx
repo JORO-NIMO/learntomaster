@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Loader2, FileText, Upload, BookOpen, CheckCircle2, Brain, Save, Share2, Sparkles } from 'lucide-react';
+import { Loader2, FileText, Upload, BookOpen, CheckCircle2, Brain, Save, Share2, Sparkles, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { QuizComponent } from '@/components/learning/QuizComponent';
+import { Question } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface SimplifiedContent {
     summary: string;
@@ -21,6 +24,9 @@ export default function StudyHub() {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<SimplifiedContent | null>(null);
+    const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
+    const [showQuiz, setShowQuiz] = useState(false);
+    const [quizLoading, setQuizLoading] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -70,12 +76,87 @@ export default function StudyHub() {
         toast({ title: "Saved", description: "Added to your digital notebook." });
     };
 
-    const handleQuiz = () => {
-        toast({ title: "Quiz Generated", description: "5 questions created from this content." });
+    const handleQuiz = async () => {
+        if (!result) return;
+        setQuizLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/quiz`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    content: result.summary + "\n" + result.key_concepts.join("\n"),
+                    num_questions: 5,
+                    difficulty: 'medium'
+                })
+            });
+
+            if (!res.ok) throw new Error("Quiz generation failed");
+
+            const data = await res.json();
+            
+            // Map backend response to frontend Question type
+            const mappedQuestions: Question[] = data.map((q: any, index: number) => ({
+                id: `q-${index}`,
+                type: 'multiple_choice',
+                question: q.question,
+                options: q.options,
+                correctAnswer: q.options[q.correct_answer], // Convert index to string value
+                explanation: q.explanation,
+                difficulty: 'medium',
+                points: 10
+            }));
+
+            setQuizQuestions(mappedQuestions);
+            setShowQuiz(true);
+            toast({ title: "Quiz Ready", description: "Test your knowledge!" });
+
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Error", description: "Failed to generate quiz.", variant: "destructive" });
+        } finally {
+            setQuizLoading(false);
+        }
     };
 
     return (
         <div className="p-6 space-y-8 max-w-6xl mx-auto animate-in fade-in duration-500">
+            {/* Quiz Overlay */}
+            {showQuiz && (
+                <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="w-full max-w-2xl bg-card rounded-xl shadow-2xl border relative max-h-[90vh] overflow-y-auto">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-4 top-4 z-10"
+                            onClick={() => setShowQuiz(false)}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                        <div className="p-6">
+                            <div className="mb-6">
+                                <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 border-blue-200">Step 3: Assessment</Badge>
+                                <h2 className="text-2xl font-bold">Knowledge Check</h2>
+                                <p className="text-muted-foreground">Test your understanding of the summarized content.</p>
+                            </div>
+                            <QuizComponent 
+                                questions={quizQuestions} 
+                                onComplete={(score, total) => {
+                                    toast({ 
+                                        title: "Quiz Completed!", 
+                                        description: `You scored ${score} out of ${total}. Great job!` 
+                                    });
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
                 <div>
@@ -259,8 +340,9 @@ export default function StudyHub() {
                             </CardContent>
                             <CardFooter className="bg-slate-50 border-t p-6 flex justify-between items-center">
                                 <p className="text-xs text-muted-foreground">Generated by Learn2Master AI</p>
-                                <Button onClick={handleQuiz} className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20">
-                                    Generate Quiz from this
+                                <Button onClick={handleQuiz} disabled={quizLoading} className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20">
+                                    {quizLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                                    {quizLoading ? "Generating Quiz..." : "Generate Quiz from this"}
                                 </Button>
                             </CardFooter>
                         </Card>

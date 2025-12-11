@@ -803,6 +803,24 @@ async def rag_chat(user_data):
     answer = await ai.answer_with_rag(question)
     return jsonify({'answer': answer})
 
+@app.route('/api/v1/ai/quiz', methods=['POST'])
+@require_auth
+def generate_quiz_endpoint():
+    """Generate a quiz based on provided content"""
+    data = request.json
+    content = data.get('content')
+    
+    if not content:
+        return jsonify({'error': 'Content is required'}), 400
+        
+    num_questions = data.get('num_questions', 5)
+    difficulty = data.get('difficulty', 'medium')
+    
+    ai = get_ai_service()
+    questions = await ai.generate_quiz(content, num_questions, difficulty)
+    
+    return jsonify(questions)
+
 @app.route('/api/v1/system/migrate', methods=['POST'])
 def system_migrate():
     """Run database migration script (Admin only - protected by secret)"""
