@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { mockQuizQuestions } from '@/data/mockData';
 import { Question } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 import { 
   CheckCircle, 
   XCircle, 
@@ -18,13 +20,17 @@ import { cn } from '@/lib/utils';
 
 interface QuizComponentProps {
   questions?: Question[];
+  topic?: string; // If provided, fetches questions from AI
   onComplete?: (score: number, total: number) => void;
 }
 
 export const QuizComponent = ({ 
-  questions = mockQuizQuestions,
+  questions: initialQuestions,
+  topic,
   onComplete 
 }: QuizComponentProps) => {
+  const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
+  const [loading, setLoading] = useState(!!topic && !initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -32,6 +38,53 @@ export const QuizComponent = ({
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+      if (topic && (!initialQuestions || initialQuestions.length === 0)) {
+          fetchQuestions();
+      }
+  }, [topic]);
+
+  const fetchQuestions = async () => {
+      setLoading(true);
+      try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/quiz`, {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Bearer ${session?.access_token}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ content: topic, num_questions: 5 })
+          });
+          if (res.ok) {
+              const data = await res.json();
+              // Transform AI response to Question type if needed
+              // Assuming AI returns list of { question, options, correct_answer, explanation }
+              // We need to map it to our Question interface
+              const mapped: Question[] = data.map((q: any, i: number) => ({
+                  id: i,
+                  text: q.question,
+                  options: q.options,
+                  correctAnswer: q.options[q.correct_answer] || q.correct_answer, // Handle index or string
+                  explanation: q.explanation,
+                  points: 10
+              }));
+              setQuestions(mapped);
+          }
+      } catch (e) {
+          console.error(e);
+          setQuestions(mockQuizQuestions); // Fallback
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  if (loading) {
+      return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+  }
+
+  if (questions.length === 0) return <div>No questions available.</div>;
   
   const currentQuestion = questions[currentIndex];
   const progress = ((currentIndex + 1) / questions.length) * 100;

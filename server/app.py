@@ -226,6 +226,51 @@ def login():
 
 # ==================== SCHOOL MANAGEMENT ====================
 
+@app.route('/api/v1/users/profile', methods=['PUT'])
+@require_auth
+def update_user_profile(user_data):
+    """Update user profile details"""
+    user_id = user_data.get('user_id')
+    data = request.json or {}
+    
+    updates = []
+    values = {'uid': user_id, 'now': datetime.utcnow()}
+    
+    # Allowed fields
+    for field in ['name', 'email', 'phone', 'bio']:
+        if field in data:
+            updates.append(f"{field}=:{field}")
+            values[field] = data[field]
+            
+    if not updates:
+        return jsonify({'message': 'No changes provided'})
+        
+    # Add updated_at
+    updates.append("updated_at=:now")
+    
+    try:
+        # Check if columns exist (bio/phone might not be in schema yet, let's check schema)
+        # Schema has: name, email. No phone or bio.
+        # We should only update name and email for now.
+        # Wait, let's check schema again.
+        # users: id, lin, tmis, nin, name, email, role, school_id, method, password_hash, is_verified, last_login, created_at, updated_at
+        
+        valid_updates = []
+        for field in ['name', 'email']:
+            if field in data:
+                valid_updates.append(f"{field}=:{field}")
+                values[field] = data[field]
+        
+        if valid_updates:
+            db.session.execute(text(f"UPDATE users SET {', '.join(valid_updates)}, updated_at=:now WHERE id=:uid"), values)
+            db.session.commit()
+            return jsonify({'message': 'Profile updated successfully'})
+        else:
+             return jsonify({'message': 'No valid fields to update'})
+             
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/v1/schools', methods=['GET'])
 @require_auth
 def get_schools(auth_lin):

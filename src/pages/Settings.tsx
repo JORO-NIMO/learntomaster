@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,39 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Helmet } from 'react-helmet-async';
-import { Bell, Moon, Globe, Lock, Volume2 } from 'lucide-react';
+import { Bell, Moon, Globe, Lock, Volume2, Save } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 const SettingsPage: React.FC = () => {
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState('en');
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+      const saved = localStorage.getItem('userSettings');
+      if (saved) {
+          const parsed = JSON.parse(saved);
+          setNotifications(parsed.notifications ?? true);
+          setDarkMode(parsed.darkMode ?? false);
+          setLanguage(parsed.language ?? 'en');
+          setSoundEnabled(parsed.soundEnabled ?? true);
+      }
+  }, []);
+
+  const handleSave = () => {
+      const settings = { notifications, darkMode, language, soundEnabled };
+      localStorage.setItem('userSettings', JSON.stringify(settings));
+      toast({ title: "Settings Saved", description: "Your preferences have been updated." });
+      
+      // Apply theme immediately if needed (mock implementation)
+      if (darkMode) {
+          document.documentElement.classList.add('dark');
+      } else {
+          document.documentElement.classList.remove('dark');
+      }
+  };
 
   return (
     <DashboardLayout>
@@ -21,9 +47,14 @@ const SettingsPage: React.FC = () => {
       </Helmet>
       
       <div className="space-y-6 max-w-2xl">
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your preferences and account settings</p>
+        <div className="flex justify-between items-center">
+            <div>
+                <h1 className="text-3xl font-bold">Settings</h1>
+                <p className="text-muted-foreground">Manage your preferences and account settings</p>
+            </div>
+            <Button onClick={handleSave}>
+                <Save className="w-4 h-4 mr-2" /> Save Changes
+            </Button>
         </div>
 
         {/* Notifications */}

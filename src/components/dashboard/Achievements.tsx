@@ -4,10 +4,17 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, Star, Flame, Target, Medal, Crown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
-export const Achievements = () => {
+interface AchievementsProps {
+    profile?: any;
+}
+
+export const Achievements = ({ profile }: AchievementsProps) => {
+    // Calculate achievements based on profile data
+    const masteryCount = profile?.mastery_level ? Object.values(profile.mastery_level).filter((v: any) => v >= 0.8).length : 0;
+    
     const achievements = [
         { title: 'Early Bird', description: 'Completed a lesson before 8 AM', icon: <Star className="w-5 h-5 text-yellow-500" />, progress: 100, unlocked: true },
-        { title: 'Math Whiz', description: 'Score 90%+ in 3 Math Quizzes', icon: <Brain className="w-5 h-5 text-blue-500" />, progress: 66, unlocked: false },
+        { title: 'Master Mind', description: 'Master 3 Competencies', icon: <Brain className="w-5 h-5 text-blue-500" />, progress: (masteryCount / 3) * 100, unlocked: masteryCount >= 3 },
         { title: 'Streak Master', description: '7 Day Learning Streak', icon: <Flame className="w-5 h-5 text-orange-500" />, progress: 42, unlocked: false },
         { title: 'Quiz Champion', description: 'Complete 50 Quizzes', icon: <Trophy className="w-5 h-5 text-purple-500" />, progress: 20, unlocked: false },
     ];
@@ -36,7 +43,7 @@ export const Achievements = () => {
                                 </div>
                                 <p className="text-xs text-muted-foreground mb-2">{achievement.description}</p>
                                 {!achievement.unlocked && (
-                                    <Progress value={achievement.progress} className="h-1.5" />
+                                    <Progress value={Math.min(100, achievement.progress)} className="h-1.5" />
                                 )}
                             </div>
                         </div>

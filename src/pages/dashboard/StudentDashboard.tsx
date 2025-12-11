@@ -13,6 +13,7 @@ import { Achievements } from '@/components/dashboard/Achievements';
 import { Badge } from '@/components/ui/badge';
 import { LearningPathway } from '@/components/dashboard/LearningPathway';
 import { MasteryTracker } from '@/components/dashboard/MasteryTracker';
+import { QuizComponent } from '@/components/learning/QuizComponent';
 
 interface LearnerProfile {
     mastery_level: Record<string, number>;
@@ -27,6 +28,7 @@ export default function StudentDashboard() {
     const [generating, setGenerating] = useState(false);
     const [assessmentData, setAssessmentData] = useState<any>(null);
     const [showAssessment, setShowAssessment] = useState(false);
+    const [showQuiz, setShowQuiz] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -241,7 +243,7 @@ export default function StudentDashboard() {
 
                 {/* Sidebar Area */}
                 <div className="space-y-8">
-                    <Achievements />
+                    <Achievements profile={profile} />
                     
                     <Card className="bg-slate-900 text-white border-slate-800">
                         <CardHeader>
@@ -257,11 +259,23 @@ export default function StudentDashboard() {
                                     {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     {generating ? 'AI Generating...' : 'Start Smart Quiz'}
                                 </Button>
+                                <Button size="lg" variant="outline" onClick={() => setShowQuiz(true)} className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white mt-2">
+                                    Quick Practice (MCQ)
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
+
+            <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Quick Practice</DialogTitle>
+                    </DialogHeader>
+                    <QuizComponent topic="General Science and Mathematics" onComplete={() => setShowQuiz(false)} />
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={showAssessment} onOpenChange={setShowAssessment}>
                 <DialogContent className="max-w-3xl max-h-[80vh]">
