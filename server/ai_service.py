@@ -5,6 +5,8 @@
 import os
 from typing import List, Dict, Optional
 import json
+import fitz  # PyMuPDF
+from supabase import create_client
 
 # Configuration - set these in .env or environment
 AI_PROVIDER = os.getenv('AI_PROVIDER', 'mock')  # 'openai', 'gemini', 'anthropic', 'mock'
@@ -31,6 +33,14 @@ class AIService:
             self.client = anthropic.Anthropic(api_key=self.api_key)
         else:
             self.client = None  # Mock mode
+        
+        # Initialize Supabase for RAG
+        self.supabase_url = os.getenv("SUPABASE_URL")
+        self.supabase_key = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+        if self.supabase_url and self.supabase_key:
+            self.supabase = create_client(self.supabase_url, self.supabase_key)
+        else:
+            self.supabase = None
     
     async def chat(
         self, 
@@ -511,6 +521,112 @@ def get_ai_service() -> AIService:
             return json.loads(clean)
         except Exception:
             return {"error": "Failed to parse AI response", "raw": response}
+
+    # ==================== RAG METHODS ====================
+
+    def extract_text_from_pdf(self, file_path: str) -> str:
+        """Extract text from PDF file"""
+        try:
+            doc = fitz.open(file_path)
+            text = ""
+            for page in doc:
+                text += page.get_text()
+            return text
+        except Exception as e:
+            print(f"PDF Extraction Error: {e}")
+            return ""
+
+    def chunk_text(self, text: str, chunk_size: int = 800) -> List[str]:
+        """Split text into chunks"""
+        words = text.split()
+        chunks = []
+        for i in range(0, len(words), chunk_size):
+            chunk = " ".join(words[i:i+chunk_size])
+            chunks.append(chunk)
+        return chunks
+
+    def _get_embedding(self, text: str) -> List[float]:
+        """Get embedding using OpenAI"""
+        try:
+            # Use existing client if it's OpenAI
+            if self.provider == 'openai' and self.client:
+                return self.client.embeddings.create(
+                    model="text-embedding-3-large",
+                    input=text
+                ).data[0].embedding
+            
+            # Fallback to creating a temporary OpenAI client
+            openai_key = os.getenv("OPENAI_API_KEY") or self.api_key
+            if openai_key:
+                import openai
+                client = openai.OpenAI(api_key=openai_key)
+                return client.embeddings.create(
+                    model="text-embedding-3-large",
+                    input=text
+                ).data[0].embedding
+        except Exception as e:
+            print(f"Embedding Error: {e}")
+        return []
+
+    def embed_and_store(self, chunks: List[str], pdf_name: str):
+        """Embed chunks and store in Supabase"""
+        if not self.supabase:
+            print("Supabase not configured")
+            return
+
+        for chunk in chunks:
+            embedding = self._get_embedding(chunk)
+            if embedding:
+                self.supabase.table("documents").insert({
+                    "content": chunk,
+                    "embedding": embedding,
+                    "metadata": {"source": pdf_name},
+                }).execute()
+
+    def search_docs(self, query: str, match_count: int = 5) -> List[Dict]:
+        """Search documents using vector similarity"""
+        if not self.supabase:
+            return []
+
+        query_embedding = self._get_embedding(query)
+        if not query_embedding:
+            return []
+
+        try:
+            result = self.supabase.rpc(
+                "match_documents",
+                {
+                    "query_embedding": query_embedding,
+                    "match_count": match_count
+                }
+            ).execute()
+            return result.data
+        except Exception as e:
+            print(f"Search Error: {e}")
+            return []
+
+    async def answer_with_rag(self, question: str) -> str:
+        """Answer question using RAG"""
+        top_chunks = self.search_docs(question)
+        
+        if not top_chunks:
+            return await self.chat([{"role": "user", "content": question}])
+
+        context = "\n\n".join([c["content"] for c in top_chunks])
+        
+        system_prompt = f"Use ONLY the following document excerpts to answer the user's question:\n\n{context}"
+        messages = [{"role": "user", "content": question}]
+        
+        return await self.chat(messages, system_prompt=system_prompt)
+
+    async def process_pdf(self, file_path: str, filename: str):
+        """Full pipeline: Extract -> Chunk -> Embed -> Store"""
+        text = self.extract_text_from_pdf(file_path)
+        if text:
+            chunks = self.chunk_text(text)
+            self.embed_and_store(chunks, filename)
+            return len(chunks)
+        return 0
 
     def _mock_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
         """Mock response for testing without API usage"""

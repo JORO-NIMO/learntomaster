@@ -759,6 +759,46 @@ async def ai_career_guidance(user_data):
     guidance = await ai.get_career_guidance(profile)
     return jsonify(guidance)
 
+@app.route('/api/v1/rag/upload', methods=['POST'])
+@require_auth
+async def rag_upload(user_data):
+    """Upload PDF for RAG"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file:
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            file.save(tmp.name)
+            tmp_path = tmp.name
+        
+        try:
+            ai = get_ai_service()
+            chunks_count = await ai.process_pdf(tmp_path, file.filename)
+            os.unlink(tmp_path) # Clean up
+            return jsonify({'status': 'processed', 'chunks': chunks_count})
+        except Exception as e:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            return jsonify({'error': str(e)}), 500
+
+@app.route('/api/v1/rag/chat', methods=['POST'])
+@require_auth
+async def rag_chat(user_data):
+    """Chat with RAG context"""
+    data = request.json or {}
+    question = data.get('question')
+    
+    if not question:
+        return jsonify({'error': 'Missing question'}), 400
+        
+    ai = get_ai_service()
+    answer = await ai.answer_with_rag(question)
+    return jsonify({'answer': answer})
+
 @app.route('/api/v1/system/migrate', methods=['POST'])
 def system_migrate():
     """Run database migration script (Admin only - protected by secret)"""
