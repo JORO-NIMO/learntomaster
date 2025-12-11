@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { SubjectProgressCard } from '@/components/dashboard/SubjectProgressCard';
 import { Achievements } from '@/components/dashboard/Achievements';
 import { Badge } from '@/components/ui/badge';
+import { LearningPathway } from '@/components/dashboard/LearningPathway';
+import { MasteryTracker } from '@/components/dashboard/MasteryTracker';
 
 interface LearnerProfile {
     mastery_level: Record<string, number>;
@@ -177,6 +179,10 @@ export default function StudentDashboard() {
             <div className="grid gap-8 lg:grid-cols-3">
                 {/* Main Content Area */}
                 <div className="lg:col-span-2 space-y-8">
+                    
+                    {/* Adaptive Learning Pathway */}
+                    <LearningPathway />
+
                     {/* Progress & Competency */}
                     <div className="grid gap-6 md:grid-cols-2">
                         <Card className="col-span-1 h-full">
@@ -190,7 +196,7 @@ export default function StudentDashboard() {
                         </Card>
 
                         <div className="col-span-1 h-full">
-                            <SubjectProgressCard />
+                            <MasteryTracker masteryMap={profile?.mastery_level || {}} />
                         </div>
                     </div>
 

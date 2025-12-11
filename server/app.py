@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import json
 from datetime import datetime
 from ai_service import get_ai_service
+from adaptive_engine import AdaptiveLearningEngine
 import asyncio
 import jwt
 import jwt
@@ -604,6 +605,72 @@ async def ai_generate_profile(user_data):
     db.session.commit()
     
     return jsonify(profile)
+
+@app.route('/api/v1/ai/pathway', methods=['POST'])
+@require_auth
+async def ai_get_pathway(user_data):
+    """Get or Generate Adaptive Learning Pathway"""
+    user_id = user_data.get('user_id')
+    
+    # Fetch profile
+    res = db.session.execute(text('SELECT * FROM learner_profiles WHERE user_id=:uid'), {'uid': user_id})
+    row = res.fetchone()
+    if not row:
+        return jsonify({'error': 'Profile not found. Generate profile first.'}), 404
+    
+    profile = dict_from_row(row)
+    
+    # Initialize Engine
+    ai = get_ai_service()
+    engine = AdaptiveLearningEngine(ai)
+    
+    # Generate Pathway
+    pathway = await engine.generate_pathway(profile)
+    
+    return jsonify(pathway)
+
+@app.route('/api/v1/ai/mastery/update', methods=['POST'])
+@require_auth
+def update_mastery(user_data):
+    """Update mastery score based on activity result"""
+    user_id = user_data.get('user_id')
+    data = request.json or {}
+    competency_code = data.get('competency_code')
+    score = data.get('score') # 0-100
+    difficulty = data.get('difficulty', 1)
+    
+    if not competency_code or score is None:
+        return jsonify({'error': 'Missing data'}), 400
+        
+    # Fetch current profile
+    res = db.session.execute(text('SELECT mastery_level FROM learner_profiles WHERE user_id=:uid'), {'uid': user_id})
+    row = res.fetchone()
+    if not row:
+        return jsonify({'error': 'Profile not found'}), 404
+        
+    mastery_map = row[0] or {} # JSONB comes as dict
+    current_val = mastery_map.get(competency_code, 0.5)
+    
+    # Calculate new score
+    ai = get_ai_service()
+    engine = AdaptiveLearningEngine(ai)
+    new_val = engine.calculate_mastery_update(float(current_val), float(score)/100.0, int(difficulty))
+    
+    # Update DB
+    mastery_map[competency_code] = round(new_val, 2)
+    
+    db.session.execute(text('''
+        UPDATE learner_profiles 
+        SET mastery_level = :map, last_updated = :now 
+        WHERE user_id = :uid
+    '''), {
+        'map': json.dumps(mastery_map),
+        'now': datetime.utcnow(),
+        'uid': user_id
+    })
+    db.session.commit()
+    
+    return jsonify({'competency': competency_code, 'old_score': current_val, 'new_score': new_val})
 
 @app.route('/api/v1/ai/adapt', methods=['POST'])
 @require_auth
