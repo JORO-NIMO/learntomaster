@@ -4,7 +4,7 @@ services:
     name: learn2master-backend
     runtime: python
     buildCommand: pip install -r server/requirements.txt
-    startCommand: gunicorn server.app:app
+    startCommand: cd server && gunicorn app:app
     envVars:
       - key: DATABASE_URL
         fromDatabase:

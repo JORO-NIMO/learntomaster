@@ -17,6 +17,7 @@ import Analytics from "./pages/Analytics";
 import Referral from "./pages/Referral";
 import StudyHub from "./pages/dashboard/StudyHub";
 import CareerCompass from "./pages/dashboard/CareerCompass";
+import MySubjects from "./pages/dashboard/MySubjects";
 import TeacherDashboard from "./pages/dashboard/TeacherDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AuthoringTool from "./pages/AuthoringTool";
@@ -100,7 +101,9 @@ const App = () => {
                 path="/dashboard/subjects"
                 element={
                   <RoleBasedRoute allowedRoles={['student']}>
-                    <Subjects />
+                    <DashboardLayout>
+                      <MySubjects />
+                    </DashboardLayout>
                   </RoleBasedRoute>
                 }
               />

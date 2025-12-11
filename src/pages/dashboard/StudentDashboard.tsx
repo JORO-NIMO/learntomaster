@@ -3,10 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Brain, BookOpen, Target, Sparkles, AlertCircle } from 'lucide-react';
+import { Loader2, Brain, BookOpen, Target, Sparkles, AlertCircle, TrendingUp, Calendar } from 'lucide-react';
 import { CompetencyRadar } from '@/components/dashboard/CompetencyRadar';
 import { useToast } from "@/hooks/use-toast";
-
+import { SubjectProgressCard } from '@/components/dashboard/SubjectProgressCard';
+import { Achievements } from '@/components/dashboard/Achievements';
+import { Badge } from '@/components/ui/badge';
 
 interface LearnerProfile {
     mastery_level: Record<string, number>;
@@ -73,8 +75,6 @@ export default function StudentDashboard() {
 
             if (res.ok) {
                 const data = await res.json();
-                // Show result in a nice modal (using state for now via simple alert/toast expansion or state var)
-                // For now, let's just log it and show a summary toast, but ideally we setAssessmentData(data)
                 console.log("AOI Generated:", data);
                 toast({
                     title: "Activity Ready: " + (data.scenario ? "Scenario Based" : "Quiz"),
@@ -107,120 +107,149 @@ export default function StudentDashboard() {
     ];
 
     return (
-        <div className="p-6 space-y-6 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center">
+        <div className="p-6 space-y-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
-                    <p className="text-muted-foreground">Your AI-powered adaptive learning path</p>
+                    <p className="text-muted-foreground">Welcome back! Here's your AI-powered learning overview.</p>
                 </div>
-                <Button onClick={fetchProfile} variant="outline">Refresh Data</Button>
+                <div className="flex gap-2">
+                    <Button onClick={fetchProfile} variant="outline" size="sm">
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Refresh Stats
+                    </Button>
+                </div>
             </div>
 
+            {/* Key Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
+                <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Learning Style</CardTitle>
-                        <Brain className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-blue-900">Learning Style</CardTitle>
+                        <Brain className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{profile?.learning_style || 'Visual'}</div>
-                        <p className="text-xs text-muted-foreground">AI-detected preference</p>
+                        <div className="text-2xl font-bold text-blue-700">{profile?.learning_style || 'Visual'}</div>
+                        <p className="text-xs text-blue-600/80">AI-detected preference</p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Mastery Score</CardTitle>
-                        <Target className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-green-900">Mastery Score</CardTitle>
+                        <Target className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">68%</div>
-                        <p className="text-xs text-muted-foreground">+5% from last week</p>
+                        <div className="text-2xl font-bold text-green-700">68%</div>
+                        <p className="text-xs text-green-600/80">+5% from last week</p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
-                        <Sparkles className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-amber-900">Study Streak</CardTitle>
+                        <Sparkles className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">12 Days</div>
-                        <p className="text-xs text-muted-foreground">Keep it up!</p>
+                        <div className="text-2xl font-bold text-amber-700">12 Days</div>
+                        <p className="text-xs text-amber-600/80">Keep it up!</p>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Next Goal</CardTitle>
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-purple-900">Next Goal</CardTitle>
+                        <BookOpen className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">Algebra II</div>
-                        <p className="text-xs text-muted-foreground">Recommended by AI</p>
+                        <div className="text-2xl font-bold text-purple-700">Algebra II</div>
+                        <p className="text-xs text-purple-600/80">Recommended by AI</p>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <Card className="col-span-1">
-                    <CardHeader>
-                        <CardTitle>Competency Map (CBC)</CardTitle>
-                        <CardDescription>Your mastery across different subjects</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <CompetencyRadar data={radarData} />
-                    </CardContent>
-                </Card>
+            <div className="grid gap-8 lg:grid-cols-3">
+                {/* Main Content Area */}
+                <div className="lg:col-span-2 space-y-8">
+                    {/* Progress & Competency */}
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card className="col-span-1 h-full">
+                            <CardHeader>
+                                <CardTitle>Competency Map (CBC)</CardTitle>
+                                <CardDescription>Your mastery across different subjects</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <CompetencyRadar data={radarData} />
+                            </CardContent>
+                        </Card>
 
-                <Card className="col-span-1">
-                    <CardHeader>
-                        <CardTitle>AI Recommendations</CardTitle>
-                        <CardDescription>Personalized content based on your gaps</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="p-4 border rounded-lg bg-accent/10 flex gap-4 items-start">
-                            <div className="bg-primary/20 p-2 rounded-full"><Brain className="h-5 w-5 text-primary" /></div>
-                            <div>
-                                <h4 className="font-semibold">Review: Quadratic Equations</h4>
-                                <p className="text-sm text-muted-foreground">Based on your recent quiz performance (45%)</p>
-                                <div className="mt-2 flex gap-2">
-                                    <Button size="sm" variant="secondary">Watch Video</Button>
-                                    <Button size="sm">Start Practice</Button>
+                        <div className="col-span-1 h-full">
+                            <SubjectProgressCard />
+                        </div>
+                    </div>
+
+                    {/* AI Recommendations */}
+                    <Card className="border-l-4 border-l-primary">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-primary" />
+                                AI Recommendations
+                            </CardTitle>
+                            <CardDescription>Personalized content based on your gaps</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 border rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors flex gap-4 items-start cursor-pointer">
+                                <div className="bg-white p-2 rounded-full shadow-sm border"><Brain className="h-5 w-5 text-primary" /></div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between">
+                                        <h4 className="font-semibold text-slate-900">Review: Quadratic Equations</h4>
+                                        <Badge variant="secondary" className="text-xs">High Priority</Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1">Based on your recent quiz performance (45%)</p>
+                                    <div className="mt-3 flex gap-2">
+                                        <Button size="sm" variant="default" className="h-8">Start Practice</Button>
+                                        <Button size="sm" variant="outline" className="h-8">Watch Video</Button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="p-4 border rounded-lg bg-accent/10 flex gap-4 items-start">
-                            <div className="bg-primary/20 p-2 rounded-full"><BookOpen className="h-5 w-5 text-primary" /></div>
-                            <div>
-                                <h4 className="font-semibold">Advance: Physics Mechanics</h4>
-                                <p className="text-sm text-muted-foreground">You've mastered the basics! Try a project.</p>
-                                <Button size="sm" className="mt-2">View Project</Button>
+                            <div className="p-4 border rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors flex gap-4 items-start cursor-pointer">
+                                <div className="bg-white p-2 rounded-full shadow-sm border"><BookOpen className="h-5 w-5 text-green-600" /></div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between">
+                                        <h4 className="font-semibold text-slate-900">Advance: Physics Mechanics</h4>
+                                        <Badge variant="outline" className="text-xs">Project</Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1">You've mastered the basics! Try a real-world project.</p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Adaptive Assessment Zone</CardTitle>
-                    <CardDescription>Generate quizzes tailored to your level</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-6 bg-secondary/20 rounded-lg">
-                        <div>
-                            <h3 className="text-lg font-semibold">Ready to test your knowledge?</h3>
-                            <p className="text-muted-foreground">AI will generate questions specifically for your weak areas.</p>
-                        </div>
-                        <Button size="lg" onClick={generateAssessment} disabled={generating}>
-                            {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {generating ? 'AI Generating...' : 'Start Smart Quiz'}
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                {/* Sidebar Area */}
+                <div className="space-y-8">
+                    <Achievements />
+                    
+                    <Card className="bg-slate-900 text-white border-slate-800">
+                        <CardHeader>
+                            <CardTitle className="text-white">Adaptive Assessment</CardTitle>
+                            <CardDescription className="text-slate-400">Generate quizzes tailored to your level</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-300">
+                                    AI will generate questions specifically for your weak areas in <span className="font-semibold text-white">Statistics</span>.
+                                </p>
+                                <Button size="lg" onClick={generateAssessment} disabled={generating} className="w-full bg-white text-slate-900 hover:bg-slate-100">
+                                    {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {generating ? 'AI Generating...' : 'Start Smart Quiz'}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }

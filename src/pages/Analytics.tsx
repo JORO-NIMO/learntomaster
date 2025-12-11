@@ -1,149 +1,267 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Helmet } from 'react-helmet-async';
-import { BarChart3, TrendingUp, Users, Award, Target, Clock } from 'lucide-react';
+import { 
+    BarChart3, 
+    TrendingUp, 
+    Users, 
+    Award, 
+    Target, 
+    Clock, 
+    Zap, 
+    Brain, 
+    ArrowUpRight,
+    Calendar
+} from 'lucide-react';
+import { 
+    AreaChart, 
+    Area, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip, 
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    Legend,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar
+} from 'recharts';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const activityData = [
+    { name: 'Mon', hours: 2.5, xp: 150 },
+    { name: 'Tue', hours: 3.8, xp: 220 },
+    { name: 'Wed', hours: 1.5, xp: 80 },
+    { name: 'Thu', hours: 4.2, xp: 300 },
+    { name: 'Fri', hours: 3.0, xp: 180 },
+    { name: 'Sat', hours: 5.5, xp: 450 },
+    { name: 'Sun', hours: 2.0, xp: 120 },
+];
+
+const subjectData = [
+    { subject: 'Math', mastery: 85, avg: 65, fullMark: 100 },
+    { subject: 'Physics', mastery: 72, avg: 55, fullMark: 100 },
+    { subject: 'Chem', mastery: 68, avg: 60, fullMark: 100 },
+    { subject: 'Bio', mastery: 90, avg: 70, fullMark: 100 },
+    { subject: 'Hist', mastery: 75, avg: 62, fullMark: 100 },
+    { subject: 'Geo', mastery: 82, avg: 58, fullMark: 100 },
+];
 
 const AnalyticsPage: React.FC = () => {
-  return (
-    <DashboardLayout>
-      <Helmet>
-        <title>Analytics - Learn2Master</title>
-      </Helmet>
-      
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Your Analytics</h1>
-          <p className="text-muted-foreground">Track your learning progress and performance metrics</p>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Learning Hours</p>
-                  <p className="text-3xl font-bold mt-2">142.5</p>
-                  <p className="text-sm text-green-600 mt-1">↑ 12.5% this week</p>
+    return (
+        <DashboardLayout>
+            <Helmet>
+                <title>Analytics - Learn2Master</title>
+            </Helmet>
+            
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Performance Analytics</h1>
+                        <p className="text-muted-foreground">Deep dive into your learning patterns and mastery.</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Last 7 Days
+                        </Button>
+                        <Button>
+                            <ArrowUpRight className="mr-2 h-4 w-4" />
+                            Export Report
+                        </Button>
+                    </div>
                 </div>
-                <Clock className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Overall Mastery</p>
-                  <p className="text-3xl font-bold mt-2">68%</p>
-                  <p className="text-sm text-green-600 mt-1">↑ 5% this month</p>
-                </div>
-                <Target className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-blue-900">Total Learning Hours</p>
+                                    <p className="text-3xl font-bold mt-2 text-blue-700">142.5</p>
+                                    <div className="flex items-center mt-1 text-sm text-blue-600">
+                                        <TrendingUp className="w-4 h-4 mr-1" />
+                                        <span>+12.5% this week</span>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-blue-100 rounded-full">
+                                    <Clock className="w-6 h-6 text-blue-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Lessons Completed</p>
-                  <p className="text-3xl font-bold mt-2">32</p>
-                  <p className="text-sm text-blue-600 mt-1">8 pending</p>
-                </div>
-                <Award className="w-8 h-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                    <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-green-900">Overall Mastery</p>
+                                    <p className="text-3xl font-bold mt-2 text-green-700">78%</p>
+                                    <div className="flex items-center mt-1 text-sm text-green-600">
+                                        <Target className="w-4 h-4 mr-1" />
+                                        <span>Top 15% of class</span>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-green-100 rounded-full">
+                                    <Award className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-        {/* Subject Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Subject Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { subject: 'Mathematics', mastery: 78, color: 'bg-blue-500' },
-                { subject: 'Physics', mastery: 65, color: 'bg-purple-500' },
-                { subject: 'Chemistry', mastery: 72, color: 'bg-green-500' },
-                { subject: 'Biology', mastery: 58, color: 'bg-orange-500' },
-              ].map((item) => (
-                <div key={item.subject}>
-                  <div className="flex justify-between mb-2">
-                    <p className="font-medium">{item.subject}</p>
-                    <p className="text-sm text-muted-foreground">{item.mastery}%</p>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className={`${item.color} h-2 rounded-full`} style={{ width: `${item.mastery}%` }} />
-                  </div>
+                    <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-purple-900">Total XP Earned</p>
+                                    <p className="text-3xl font-bold mt-2 text-purple-700">12,450</p>
+                                    <div className="flex items-center mt-1 text-sm text-purple-600">
+                                        <Zap className="w-4 h-4 mr-1" />
+                                        <span>+850 today</span>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-purple-100 rounded-full">
+                                    <Zap className="w-6 h-6 text-purple-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-amber-900">Focus Score</p>
+                                    <p className="text-3xl font-bold mt-2 text-amber-700">8.5/10</p>
+                                    <div className="flex items-center mt-1 text-sm text-amber-600">
+                                        <Brain className="w-4 h-4 mr-1" />
+                                        <span>High consistency</span>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-amber-100 rounded-full">
+                                    <Brain className="w-6 h-6 text-amber-600" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-              ))}
+
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+                    {/* Activity Chart */}
+                    <Card className="lg:col-span-4">
+                        <CardHeader>
+                            <CardTitle>Learning Activity</CardTitle>
+                            <CardDescription>Hours spent and XP earned over the last 7 days</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={activityData}>
+                                        <defs>
+                                            <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                            </linearGradient>
+                                            <linearGradient id="colorXp" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" />
+                                        <YAxis yAxisId="left" />
+                                        <YAxis yAxisId="right" orientation="right" />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Area yAxisId="left" type="monotone" dataKey="hours" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHours)" name="Hours" />
+                                        <Area yAxisId="right" type="monotone" dataKey="xp" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorXp)" name="XP" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Subject Mastery Radar */}
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <CardTitle>Subject Mastery</CardTitle>
+                            <CardDescription>Your performance vs class average</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={subjectData}>
+                                        <PolarGrid />
+                                        <PolarAngleAxis dataKey="subject" />
+                                        <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                                        <Radar name="You" dataKey="mastery" stroke="#22c55e" fill="#22c55e" fillOpacity={0.6} />
+                                        <Radar name="Average" dataKey="avg" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.3} />
+                                        <Legend />
+                                        <Tooltip />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Detailed Breakdown */}
+                <div className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Strongest Competencies</CardTitle>
+                            <CardDescription>Areas where you are excelling</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {[
+                                { name: 'Calculus: Integration', score: 95, subject: 'Math' },
+                                { name: 'Cell Biology', score: 92, subject: 'Biology' },
+                                { name: 'Mechanics: Forces', score: 88, subject: 'Physics' },
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                                    <div>
+                                        <p className="font-semibold text-green-900">{item.name}</p>
+                                        <p className="text-xs text-green-700">{item.subject}</p>
+                                    </div>
+                                    <Badge className="bg-green-500 hover:bg-green-600">{item.score}%</Badge>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Areas for Improvement</CardTitle>
+                            <CardDescription>Focus here to boost your grades</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {[
+                                { name: 'Organic Chemistry', score: 45, subject: 'Chemistry' },
+                                { name: 'Statistics: Probability', score: 52, subject: 'Math' },
+                                { name: 'World History: WWII', score: 58, subject: 'History' },
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                                    <div>
+                                        <p className="font-semibold text-red-900">{item.name}</p>
+                                        <p className="text-xs text-red-700">{item.subject}</p>
+                                    </div>
+                                    <Button size="sm" variant="destructive" className="h-7 text-xs">Practice</Button>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Weekly Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Weekly Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                <div key={day} className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">{day}</p>
-                  <div className="h-16 bg-muted rounded flex items-end justify-center p-1">
-                    <div className="w-full bg-blue-500 rounded" style={{ height: `${20 + i * 8}%` }} />
-                  </div>
-                  <p className="text-xs mt-2">{30 + i * 5}m</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Achievements */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Achievements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { badge: '🎯', title: 'Master Mathematician', desc: 'Reached 80% in Mathematics' },
-                { badge: '🔥', title: '7-Day Streak', desc: 'Learned for 7 consecutive days' },
-                { badge: '⭐', title: 'Quick Learner', desc: 'Completed a lesson in under 10 minutes' },
-              ].map((item) => (
-                <div key={item.title} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <span className="text-2xl">{item.badge}</span>
-                  <div>
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Export */}
-        <Button variant="outline" className="w-full">
-          Export Analytics Report
-        </Button>
-      </div>
-    </DashboardLayout>
-  );
+        </DashboardLayout>
+    );
 };
 
 export default AnalyticsPage;
