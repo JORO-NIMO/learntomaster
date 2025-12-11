@@ -700,13 +700,46 @@ async def ai_plan_lesson(user_data):
     topic = data.get('topic')
     duration = data.get('duration', '60')
     level = data.get('class_level', 'Senior 1')
+    objectives = data.get('objectives', '')
     
     if not topic:
         return jsonify({'error': 'Missing topic'}), 400
         
     ai = get_ai_service()
-    plan = await ai.generate_lesson_plan(topic, duration, level)
+    # Updated signature: topic, grade_level, duration, objectives
+    plan = await ai.generate_lesson_plan(topic, level, duration, objectives)
     return jsonify(plan)
+
+@app.route('/api/v1/ai/quiz', methods=['POST'])
+@require_auth
+async def ai_generate_quiz(user_data):
+    """Generate Quiz"""
+    data = request.json or {}
+    content = data.get('content')
+    num_questions = int(data.get('num_questions', 5))
+    difficulty = data.get('difficulty', 'medium')
+    
+    if not content:
+        return jsonify({'error': 'Missing content'}), 400
+        
+    ai = get_ai_service()
+    quiz = await ai.generate_quiz(content, num_questions, difficulty)
+    return jsonify(quiz)
+
+@app.route('/api/v1/ai/summarize', methods=['POST'])
+@require_auth
+async def ai_summarize(user_data):
+    """Summarize Content"""
+    data = request.json or {}
+    content = data.get('content')
+    format_type = data.get('format', 'bullet_points')
+    
+    if not content:
+        return jsonify({'error': 'Missing content'}), 400
+        
+    ai = get_ai_service()
+    summary = await ai.summarize_content(content, format_type)
+    return jsonify({'summary': summary})
 
 @app.route('/api/v1/ai/plan/career', methods=['POST'])
 @require_auth

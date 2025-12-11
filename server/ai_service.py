@@ -134,6 +134,58 @@ Your role is to:
         except Exception as e:
             print(f"Anthropic error: {e}")
             return self._mock_response(messages, {})
+
+    async def generate_lesson_plan(self, topic: str, grade_level: str, duration: str, objectives: str = "") -> Dict:
+        """Generate a structured lesson plan"""
+        system_prompt = "You are an expert teacher. Create a detailed lesson plan in JSON format."
+        user_prompt = f"Create a {duration}-minute lesson plan for {grade_level} students on '{topic}'. Objectives: {objectives}. Return JSON with keys: title, objectives (list), activities (list of {{time, activity}}), resources (list), assessment."
+        
+        messages = [{"role": "user", "content": user_prompt}]
+        
+        try:
+            # In a real scenario, we'd call the specific provider directly to ensure JSON mode if supported
+            # For now, we rely on the chat method
+            response_text = await self.chat(messages, system_prompt=system_prompt)
+            # Clean up JSON if needed (remove markdown code blocks)
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+            return json.loads(response_text)
+        except Exception as e:
+            print(f"Error generating lesson plan: {e}")
+            # Return mock data on failure
+            return {
+                "title": f"Lesson: {topic}",
+                "objectives": ["Understand key concepts", "Apply knowledge"],
+                "activities": [
+                    {"time": "10 min", "activity": "Introduction"},
+                    {"time": "30 min", "activity": "Main Lesson"},
+                    {"time": "20 min", "activity": "Practice"}
+                ],
+                "resources": ["Textbook", "Whiteboard"],
+                "assessment": "Class discussion"
+            }
+
+    async def generate_quiz(self, content: str, num_questions: int = 5, difficulty: str = "medium") -> List[Dict]:
+        """Generate quiz questions from content"""
+        system_prompt = "You are an expert examiner. Create quiz questions in JSON format."
+        user_prompt = f"Create {num_questions} {difficulty} multiple-choice questions based on this content: '{content[:1000]}...'. Return JSON list of objects with keys: question, options (list), correct_answer (index), explanation."
+        
+        messages = [{"role": "user", "content": user_prompt}]
+        
+        try:
+            response_text = await self.chat(messages, system_prompt=system_prompt)
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+            return json.loads(response_text)
+        except Exception as e:
+            print(f"Error generating quiz: {e}")
+            return []
+
+    async def summarize_content(self, content: str, format: str = "bullet_points") -> str:
+        """Summarize educational content"""
+        system_prompt = "You are an expert tutor. Summarize the following content for a student."
+        user_prompt = f"Summarize this text in {format}: '{content[:2000]}...'"
+        
+        messages = [{"role": "user", "content": user_prompt}]
+        return await self.chat(messages, system_prompt=system_prompt)
     
     def _mock_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
         """Generate mock AI response for testing"""
