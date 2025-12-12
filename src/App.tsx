@@ -18,6 +18,7 @@ import Referral from "./pages/Referral";
 import StudyHub from "./pages/dashboard/StudyHub";
 import CareerCompass from "./pages/dashboard/CareerCompass";
 import MySubjects from "./pages/dashboard/MySubjects";
+import AchievementsPage from "./pages/dashboard/AchievementsPage";
 import TeacherDashboard from "./pages/dashboard/TeacherDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import AuthoringTool from "./pages/AuthoringTool";
@@ -104,6 +105,14 @@ const App = () => {
                     <DashboardLayout>
                       <MySubjects />
                     </DashboardLayout>
+                  </RoleBasedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/achievements"
+                element={
+                  <RoleBasedRoute allowedRoles={['student']}>
+                    <AchievementsPage />
                   </RoleBasedRoute>
                 }
               />

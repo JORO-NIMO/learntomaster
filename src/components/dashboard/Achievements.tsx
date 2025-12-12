@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Star, Flame, Target, Medal, Crown } from 'lucide-react';
+import { Trophy, Star, Flame, Target, Medal, Crown, Brain } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface AchievementsProps {
