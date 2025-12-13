@@ -44,7 +44,7 @@ export const MasteryTracker = ({ masteryMap }: MasteryTrackerProps) => {
                             <span className="font-medium">{item.code}</span>
                             <span className="text-muted-foreground">{getStatusLabel(item.score)} ({Math.round(item.score * 100)}%)</span>
                         </div>
-                        <Progress value={item.score * 100} className="h-2" indicatorClassName={getStatusColor(item.score)} />
+                        <Progress value={item.score * 100} className={`h-2 [&>div]:${getStatusColor(item.score)}`} />
                     </div>
                 ))}
             </CardContent>
