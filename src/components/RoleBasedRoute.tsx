@@ -1,42 +1,56 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { getCurrentUser, UserRole } from '@/lib/auth';
+import { UserRole } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
+import { useServerRoleVerification } from '@/hooks/useServerRoleVerification';
+import { Loader2 } from 'lucide-react';
 
 interface RoleBasedRouteProps {
-    children: React.ReactNode;
-    allowedRoles: UserRole[];
+  children: React.ReactNode;
+  allowedRoles: UserRole[];
 }
 
 const RoleBasedRoute = ({ children, allowedRoles }: RoleBasedRouteProps) => {
-    const user = getCurrentUser();
-    const location = useLocation();
-    const { toast } = useToast();
+  const location = useLocation();
+  const { toast } = useToast();
+  const { verified, userRoles, isLoading, error } = useServerRoleVerification(allowedRoles);
 
-    useEffect(() => {
-        if (user && !allowedRoles.includes(user.role)) {
-            toast({
-                variant: "destructive",
-                title: "Access Denied",
-                description: `You need to be a ${allowedRoles.join(' or ')} to access this page.`,
-            });
-        }
-    }, [user, allowedRoles, toast]);
-
-    if (!user) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+  useEffect(() => {
+    if (!isLoading && !verified && !error) {
+      toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: `You need to be a ${allowedRoles.join(' or ')} to access this page.`,
+      });
     }
+  }, [isLoading, verified, error, allowedRoles, toast]);
 
-    if (!allowedRoles.includes(user.role)) {
-        // Redirect to appropriate dashboard based on actual role
-        if (user.role === 'teacher') return <Navigate to="/teacher" replace />;
-        if (user.role === 'student') return <Navigate to="/dashboard" replace />;
-        if (user.role === 'admin' || user.role === 'school_admin') return <Navigate to="/admin" replace />;
+  // Show loading state while verifying
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Verifying access...</span>
+      </div>
+    );
+  }
 
-        return <Navigate to="/" replace />;
-    }
+  // Not authenticated - redirect to login
+  if (error === 'Not authenticated') {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-    return <>{children}</>;
+  // Role not verified - redirect based on actual role
+  if (!verified) {
+    // Redirect to appropriate dashboard based on actual server-verified role
+    if (userRoles.includes('teacher')) return <Navigate to="/teacher" replace />;
+    if (userRoles.includes('student')) return <Navigate to="/dashboard" replace />;
+    if (userRoles.includes('admin') || userRoles.includes('school_admin')) return <Navigate to="/admin" replace />;
+    
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 export default RoleBasedRoute;
