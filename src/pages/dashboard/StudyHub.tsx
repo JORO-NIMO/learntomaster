@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Loader2, FileText, Upload, BookOpen, CheckCircle2, Brain, Save, Share2, Sparkles, X } from 'lucide-react';
+import { Loader2, FileText, Upload, BookOpen, CheckCircle2, Brain, Save, Share2, Sparkles, X, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
