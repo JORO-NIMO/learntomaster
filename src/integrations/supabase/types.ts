@@ -20,11 +20,8 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
-          lin: string | null
           name: string
-          nin: string | null
           school_id: string | null
-          tmis: string | null
           updated_at: string | null
         }
         Insert: {
@@ -32,11 +29,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
-          lin?: string | null
           name: string
-          nin?: string | null
           school_id?: string | null
-          tmis?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -44,11 +38,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
-          lin?: string | null
           name?: string
-          nin?: string | null
           school_id?: string | null
-          tmis?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -152,6 +143,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      migrate_sensitive_identifiers: {
+        Args: { encryption_key: string }
+        Returns: number
       }
     }
     Enums: {
