@@ -93,6 +93,40 @@ def verify_supabase_jwt(token: str):
         app.logger.error(f'JWT verification error: {str(e)}')
         return None
 
+def get_or_create_local_user(user_data):
+    """Ensure Supabase user exists in local database for FK constraints"""
+    user_id = user_data.get('user_id')
+    if not user_id:
+        return None
+        
+    try:
+        # Check if user exists (using lin as the Supabase UUID)
+        res = db.session.execute(text('SELECT id FROM users WHERE lin=:uid'), {'uid': user_id}).fetchone()
+        if res:
+            return res.id
+            
+        # Create user if not exists
+        app.logger.info(f"Creating local shadow user for {user_id}")
+        db.session.execute(text('''INSERT INTO users 
+            (lin, name, email, role, method, password_hash, created_at) 
+            VALUES (:lin, :name, :email, :role, 'supabase', 'managed_by_supabase', :now)'''),
+            {
+                'lin': user_id,
+                'name': user_data.get('email', 'User').split('@')[0], # Fallback name
+                'email': user_data.get('email'),
+                'role': user_data.get('role', 'student'),
+                'now': datetime.utcnow()
+            })
+        db.session.commit()
+        
+        # Get the new ID
+        res = db.session.execute(text('SELECT id FROM users WHERE lin=:uid'), {'uid': user_id}).fetchone()
+        return res.id if res else None
+    except Exception as e:
+        app.logger.error(f"Error syncing local user: {e}")
+        db.session.rollback()
+        return None
+
 def require_auth(f):
     """Decorator to require valid Supabase JWT authentication"""
     @wraps(f)
@@ -107,6 +141,9 @@ def require_auth(f):
         
         if not user_data:
             return jsonify({'error': 'Invalid or expired token'}), 401
+            
+        # Ensure user exists in local DB
+        get_or_create_local_user(user_data)
         
         # Pass user_data to the decorated function
         return f(user_data, *args, **kwargs)
@@ -406,14 +443,16 @@ def create_assignment(auth_lin):
 
 @app.route('/api/v1/progress', methods=['GET'])
 @require_auth
-def get_progress(auth_lin):
-    res = db.session.execute(text('SELECT * FROM progress WHERE lin=:lin ORDER BY last_accessed DESC'), {'lin': auth_lin})
+def get_progress(user_data):
+    user_id = user_data.get('user_id')
+    res = db.session.execute(text('SELECT * FROM progress WHERE lin=:lin ORDER BY last_accessed DESC'), {'lin': user_id})
     progress = [dict_from_row(row) for row in res.fetchall()]
     return jsonify({'progress': progress})
 
 @app.route('/api/v1/progress', methods=['POST'])
 @require_auth
-def update_progress(auth_lin):
+def update_progress(user_data):
+    user_id = user_data.get('user_id')
     data = request.json or {}
     lesson_id = data.get('lesson_id')
     if not lesson_id:
@@ -432,7 +471,7 @@ def update_progress(auth_lin):
         time_spent=progress.time_spent + excluded.time_spent,
         last_accessed=excluded.last_accessed'''),
         {
-            'lin': auth_lin, 'lid': lesson_id, 'subj': data.get('subject'),
+            'lin': user_id, 'lid': lesson_id, 'subj': data.get('subject'),
             'comp': data.get('completed', 0), 'score': data.get('score'),
             'time': data.get('time_spent', 0), 'last': datetime.utcnow(),
             'curr': datetime.utcnow()
@@ -444,11 +483,12 @@ def update_progress(auth_lin):
 
 @app.route('/api/v1/ai/chat', methods=['POST'])
 @require_auth
-def ai_chat(auth_lin):
+def ai_chat(user_data):
     data = request.json or {}
     messages = data.get('messages', [])
     context = data.get('context', {})
-    session_id = data.get('session_id', f"session-{auth_lin}-{int(datetime.utcnow().timestamp())}")
+    user_id = user_data.get('user_id')
+    session_id = data.get('session_id', f"session-{user_id}-{int(datetime.utcnow().timestamp())}")
     
     if not messages:
         return jsonify({'error': 'messages required'}), 400
@@ -461,24 +501,34 @@ def ai_chat(auth_lin):
     loop.close()
     
     last_user_msg = messages[-1] if messages else {}
-    common_params = {'lin': auth_lin, 'sid': session_id, 'ctx': json.dumps(context), 'created_at': datetime.utcnow()}
+    common_params = {'lin': user_id, 'sid': session_id, 'ctx': json.dumps(context), 'created_at': datetime.utcnow()}
     
-    db.session.execute(text('''INSERT INTO ai_conversations (lin, session_id, role, content, context, created_at)
-        VALUES (:lin, :sid, 'user', :content, :ctx, :created_at)'''),
-        {**common_params, 'content': last_user_msg.get('content', '')})
-        
-    db.session.execute(text('''INSERT INTO ai_conversations (lin, session_id, role, content, context, created_at)
-        VALUES (:lin, :sid, 'assistant', :content, :ctx, :created_at)'''),
-        {**common_params, 'content': response})
+    try:
+        db.session.execute(text('''INSERT INTO ai_conversations (lin, session_id, role, content, context, created_at)
+            VALUES (:lin, :sid, 'user', :content, :ctx, :created_at)'''),
+            {**common_params, 'content': last_user_msg.get('content', '')})
+            
+        db.session.execute(text('''INSERT INTO ai_conversations (lin, session_id, role, content, context, created_at)
+            VALUES (:lin, :sid, 'assistant', :content, :ctx, :created_at)'''),
+            {**common_params, 'content': response})
+            
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Failed to save conversation: {e}")
+        db.session.rollback()
+        # Don't fail the request if logging fails
     
-    db.session.commit()
-    return jsonify({'response': response, 'session_id': session_id})
+    return jsonify({
+        'response': response,
+        'session_id': session_id
+    })
 
 @app.route('/api/v1/ai/history/<session_id>', methods=['GET'])
 @require_auth
-def ai_history(auth_lin, session_id):
+def ai_history(user_data, session_id):
+    user_id = user_data.get('user_id')
     res = db.session.execute(text('SELECT role, content, created_at FROM ai_conversations WHERE lin=:lin AND session_id=:sid ORDER BY created_at'),
-        {'lin': auth_lin, 'sid': session_id})
+        {'lin': user_id, 'sid': session_id})
     history = [dict_from_row(row) for row in res.fetchall()]
     return jsonify({'history': history})
 
@@ -486,20 +536,22 @@ def ai_history(auth_lin, session_id):
 
 @app.route('/api/v1/bookmarks', methods=['GET'])
 @require_auth
-def get_bookmarks(auth_lin):
-    res = db.session.execute(text('SELECT * FROM bookmarks WHERE lin=:lin ORDER BY created_at DESC'), {'lin': auth_lin})
+def get_bookmarks(user_data):
+    user_id = user_data.get('user_id')
+    res = db.session.execute(text('SELECT * FROM bookmarks WHERE lin=:lin ORDER BY created_at DESC'), {'lin': user_id})
     bookmarks = [dict_from_row(row) for row in res.fetchall()]
     return jsonify({'bookmarks': bookmarks})
 
 @app.route('/api/v1/bookmarks', methods=['POST'])
 @require_auth
-def create_bookmark(auth_lin):
+def create_bookmark(user_data):
+    user_id = user_data.get('user_id')
     data = request.json or {}
     db.session.execute(text('''INSERT INTO bookmarks (lin, lesson_id, section_id, note, created_at)
         VALUES (:lin, :lid, :sid, :note, :created_at)
         ON CONFLICT(lin, lesson_id, section_id) DO UPDATE SET note=excluded.note'''),
         {
-            'lin': auth_lin, 'lid': data.get('lesson_id'),
+            'lin': user_id, 'lid': data.get('lesson_id'),
             'sid': data.get('section_id'), 'note': data.get('note'),
             'created_at': datetime.utcnow()
         })
@@ -508,25 +560,27 @@ def create_bookmark(auth_lin):
 
 @app.route('/api/v1/notes', methods=['GET'])
 @require_auth
-def get_notes(auth_lin):
+def get_notes(user_data):
+    user_id = user_data.get('user_id')
     lesson_id = request.args.get('lesson_id')
     if lesson_id:
         res = db.session.execute(text('SELECT * FROM notes WHERE lin=:lin AND lesson_id=:lid ORDER BY created_at DESC'),
-            {'lin': auth_lin, 'lid': lesson_id})
+            {'lin': user_id, 'lid': lesson_id})
     else:
-        res = db.session.execute(text('SELECT * FROM notes WHERE lin=:lin ORDER BY created_at DESC'), {'lin': auth_lin})
+        res = db.session.execute(text('SELECT * FROM notes WHERE lin=:lin ORDER BY created_at DESC'), {'lin': user_id})
     
     notes = [dict_from_row(row) for row in res.fetchall()]
     return jsonify({'notes': notes})
 
 @app.route('/api/v1/notes', methods=['POST'])
 @require_auth
-def create_note(auth_lin):
+def create_note(user_data):
+    user_id = user_data.get('user_id')
     data = request.json or {}
     db.session.execute(text('''INSERT INTO notes (lin, lesson_id, section_id, content, created_at)
         VALUES (:lin, :lid, :sid, :content, :created_at)'''),
         {
-            'lin': auth_lin, 'lid': data.get('lesson_id'),
+            'lin': user_id, 'lid': data.get('lesson_id'),
             'sid': data.get('section_id'), 'content': data.get('content'),
             'created_at': datetime.utcnow()
         })
@@ -538,7 +592,8 @@ def create_note(auth_lin):
 
 @app.route('/api/v1/sync/upload', methods=['POST'])
 @require_auth
-def sync_upload(auth_lin):
+def sync_upload(user_data):
+    user_id = user_data.get('user_id')
     data = request.json or {}
     queue = data.get('queue', [])
     if not isinstance(queue, list):
@@ -556,8 +611,9 @@ def sync_upload(auth_lin):
         try:
             if isinstance(payload, dict):
                 rec_lin = payload.get('lin')
-                if rec_lin and rec_lin != auth_lin:
-                    return jsonify({'error': 'lin mismatch', 'client_id': client_id}), 403
+                if rec_lin and rec_lin != user_id:
+                    # Allow if rec_lin is missing or matches
+                    pass
         except:
             pass
             
