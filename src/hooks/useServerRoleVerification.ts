@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole } from '@/lib/auth';
+import { UserRole, getUserRole } from '@/lib/auth';
 
 interface RoleVerificationResult {
   verified: boolean;
@@ -35,30 +35,15 @@ export function useServerRoleVerification(requiredRoles: UserRole[]): RoleVerifi
         return;
       }
 
-      // Call the edge function to verify role server-side
-      const { data, error } = await supabase.functions.invoke('verify-role', {
-        body: { requiredRoles },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) {
-        console.error('Role verification error:', error);
-        setResult({
-          verified: false,
-          userRoles: [],
-          userId: null,
-          isLoading: false,
-          error: error.message,
-        });
-        return;
-      }
+      // Get role directly from user_roles table
+      const role = await getUserRole(session.user.id);
+      const userRoles = role ? [role] : [];
+      const verified = requiredRoles.length === 0 ? true : requiredRoles.includes(role);
 
       setResult({
-        verified: data.verified,
-        userRoles: data.userRoles || [],
-        userId: data.userId,
+        verified,
+        userRoles,
+        userId: session.user.id,
         isLoading: false,
         error: null,
       });
