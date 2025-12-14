@@ -21,7 +21,16 @@ import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
-CORS(app)
+
+# Explicit CORS allowlist for frontend origins (Render + local dev)
+frontend_origins = [
+    "https://learn2master.onrender.com",
+    "https://learn2master-frontend.onrender.com",
+    "http://localhost:5173",
+    "http://localhost:8080",
+    "http://localhost:3000",
+]
+CORS(app, resources={r"/*": {"origins": frontend_origins}}, supports_credentials=True)
 
 # Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///data.db')
