@@ -11,13 +11,23 @@ const SUPABASE_KEY =
 // import { supabase } from "@/integrations/supabase/client";
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  throw new Error('Supabase environment variables are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  console.error('Supabase environment variables are missing!');
+  console.error('VITE_SUPABASE_URL:', SUPABASE_URL);
+  console.error('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+  console.error('VITE_SUPABASE_PUBLISHABLE_KEY:', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+  console.error('Please create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+// Create client even with missing vars to avoid breaking the app
+// Will fail at runtime when trying to use auth
+export const supabase = createClient<Database>(
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_KEY || 'placeholder-key',
+  {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+    }
   }
-});
+);

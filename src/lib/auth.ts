@@ -122,55 +122,71 @@ export async function registerUser(
   role: UserRole = 'student',
   extraData?: { lin?: string; tmis?: string; nin?: string; school_id?: string }
 ): Promise<AuthUser> {
-  const redirectUrl = `${window.location.origin}/`;
-  
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: redirectUrl,
-      data: {
-        name,
-        role,
-        ...extraData
+  try {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name,
+          role,
+          ...extraData
+        }
       }
+    });
+
+    if (error) {
+      console.error('Supabase signup error:', error);
+      throw error;
     }
-  });
+    if (!data.user) throw new Error('Registration failed - no user returned');
 
-  if (error) throw error;
-  if (!data.user) throw new Error('Registration failed');
+    // Wait for the profile to be created by the trigger
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Wait for the profile to be created by the trigger
-  await new Promise(resolve => setTimeout(resolve, 500));
+    const [profile, userRole] = await Promise.all([
+      getProfile(data.user.id),
+      getUserRole(data.user.id)
+    ]);
 
-  const [profile, userRole] = await Promise.all([
-    getProfile(data.user.id),
-    getUserRole(data.user.id)
-  ]);
-
-  const authUser = supabaseUserToAuthUser(data.user, profile, userRole);
-  setLocalUser(authUser);
-  return authUser;
+    const authUser = supabaseUserToAuthUser(data.user, profile, userRole);
+    setLocalUser(authUser);
+    return authUser;
+  } catch (error) {
+    console.error('Register error:', error);
+    throw error;
+  }
 }
 
 // Sign in an existing user
 export async function login(email: string, password: string): Promise<AuthUser> {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-  if (error) throw error;
-  if (!data.user) throw new Error('Login failed');
+    if (error) {
+      console.error('Supabase login error:', error);
+      throw error;
+    }
+    if (!data.user) throw new Error('Login failed - no user returned');
 
-  const [profile, role] = await Promise.all([
-    getProfile(data.user.id),
-    getUserRole(data.user.id)
-  ]);
+    const [profile, role] = await Promise.all([
+      getProfile(data.user.id),
+      getUserRole(data.user.id)
+    ]);
 
-  const authUser = supabaseUserToAuthUser(data.user, profile, role);
-  setLocalUser(authUser);
-  return authUser;
+    const authUser = supabaseUserToAuthUser(data.user, profile, role);
+    setLocalUser(authUser);
+    return authUser;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
 }
 
 // Sign out
