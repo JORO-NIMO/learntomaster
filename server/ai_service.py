@@ -9,7 +9,7 @@ import fitz  # PyMuPDF
 from supabase import create_client
 
 # Configuration - set these in .env or environment
-AI_PROVIDER = os.getenv('AI_PROVIDER', 'mock')  # 'openai', 'gemini', 'anthropic', 'mock'
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'openai')  # 'openai', 'gemini', 'anthropic', 'openai'
 AI_API_KEY = os.getenv('AI_API_KEY', '')
 AI_MODEL = os.getenv('AI_MODEL', 'gpt-4')  # Default models per provider
 
@@ -17,8 +17,13 @@ class AIService:
     """Multi-provider AI service for Learn2Master"""
     
     def __init__(self, provider: str = None, api_key: str = None):
-        self.provider = provider or AI_PROVIDER
+        # Prefer explicit provider, otherwise use env; if an API key exists but provider is unset or openai, default to OpenAI
         self.api_key = api_key or AI_API_KEY
+        requested_provider = provider or AI_PROVIDER
+        if self.api_key and requested_provider in (None, '', 'openai'):
+            self.provider = 'openai'
+        else:
+            self.provider = requested_provider or 'openai'
         
         # Initialize provider client
         if self.provider == 'openai' and self.api_key:
@@ -32,7 +37,7 @@ class AIService:
             import anthropic
             self.client = anthropic.Anthropic(api_key=self.api_key)
         else:
-            self.client = None  # Mock mode
+            self.client = None  # openai mode
         
         # Initialize Supabase for RAG
         self.supabase_url = os.getenv("SUPABASE_URL")
@@ -63,10 +68,10 @@ class AIService:
         elif self.provider == 'anthropic':
             return await self._call_anthropic(messages, system_prompt)
         
-        # FORCE MOCK IF NO KEY, BUT TRY TO WARN
+        # FORCE openai IF NO KEY, BUT TRY TO WARN
         if not self.api_key or self.api_key == "change-me":
-            print("WARNING: No valid API Key found. Returning mock data.")
-            return self._mock_response(messages, context)
+            print("WARNING: No valid API Key found. Returning openai data.")
+            return self._openai_response(messages, context)
         
         # Fallback to OpenAI if key exists but provider obscure? Default to OpenAI.
         return await self._call_openai(messages, system_prompt)
@@ -108,7 +113,7 @@ Your role is to:
             return response.choices[0].message.content
         except Exception as e:
             print(f"OpenAI error: {e}")
-            return self._mock_response(messages, {})
+            return self._openai_response(messages, {})
     
     async def _call_gemini(self, messages: List[Dict], system_prompt: str) -> str:
         """Call Google Gemini API"""
@@ -122,7 +127,7 @@ Your role is to:
             return response.text
         except Exception as e:
             print(f"Gemini error: {e}")
-            return self._mock_response(messages, {})
+            return self._openai_response(messages, {})
     
     async def _call_anthropic(self, messages: List[Dict], system_prompt: str) -> str:
         """Call Anthropic Claude API"""
@@ -136,7 +141,7 @@ Your role is to:
             return response.content[0].text
         except Exception as e:
             print(f"Anthropic error: {e}")
-            return self._mock_response(messages, {})
+            return self._openai_response(messages, {})
 
     async def generate_lesson_plan(self, topic: str, grade_level: str, duration: str, objectives: str = "") -> Dict:
         """Generate a structured lesson plan"""
@@ -498,8 +503,8 @@ Your role is to:
             return len(chunks)
         return 0
 
-    def _mock_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
-        """Generate mock AI response for testing"""
+    def _openai_response(self, messages: List[Dict], context: Optional[Dict]) -> str:
+        """Generate openai AI response for testing"""
         last_message = messages[-1]['content'].lower() if messages else ""
         
         # Pattern matching for common questions

@@ -23,7 +23,7 @@ const sidebarLinks = [
   { name: 'Career Compass', href: '/dashboard/career', icon: Compass },
   { name: 'My Subjects', href: '/dashboard/subjects', icon: Library },
   { name: 'Achievements', href: '/dashboard/achievements', icon: Trophy },
-  { name: 'Progress', href: '/analytics', icon: BarChart3 },
+  { name: 'Progress', href: '/dashboard/analytics', icon: BarChart3 },
 ];
 
 const bottomLinks = [

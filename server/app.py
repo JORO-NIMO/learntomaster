@@ -18,6 +18,7 @@ import jwt
 from functools import wraps
 import pypdf
 import io
+from flask import make_response
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -39,6 +40,20 @@ CORS(
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 )
+
+# Early return for preflight so every endpoint consistently carries CORS headers
+@app.before_request
+def handle_preflight():
+    if request.method == 'OPTIONS':
+        origin = request.headers.get('Origin')
+        response = make_response('', 204)
+        if origin in frontend_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+            response.headers['Vary'] = 'Origin'
+        return response
 
 # Explicit CORS headers to be safe across environments/proxies
 @app.after_request
@@ -162,7 +177,6 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         # Let CORS preflight pass without auth - return proper Response
         if request.method == 'OPTIONS':
-            from flask import make_response
             response = make_response('', 204)
             origin = request.headers.get('Origin')
             if origin in frontend_origins:
