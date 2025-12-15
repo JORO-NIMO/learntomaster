@@ -7,7 +7,6 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 
@@ -60,8 +59,6 @@ export const DashboardLayout = ({
           </div>
         </main>
       </div>
-
-      <OfflineIndicator />
     </div>
   );
 };

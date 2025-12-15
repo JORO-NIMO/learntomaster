@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'placeholder.svg', 'offline.html'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'placeholder.svg'],
       manifest: {
         name: 'Learn2Master',
         short_name: 'L2M',
@@ -45,7 +45,6 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        navigateFallback: '/offline.html',
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/i,

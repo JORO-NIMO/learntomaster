@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import AIAssistant from '@/components/learning/AIAssistant';
 import { Progress } from '@/components/ui/progress';
 import { mockLessons, mockQuizQuestions } from '@/data/mockData';
-import { enqueueAttempt } from '@/lib/offline';
-import { QueueRecord } from '@/types';
 import { getCurrentUser } from '@/lib/auth';
 import { lessonService, Lesson } from '@/lib/lessonService';
 import {
@@ -128,22 +126,7 @@ const LearnPage = () => {
   };
 
   const handleQuizComplete = async (score: number, total: number) => {
-    const u = getCurrentUser();
-    const client_id = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `att-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const record: QueueRecord = {
-      client_id,
-      type: 'assessment_attempt',
-      payload: {
-        lin: u?.lin ?? null,
-        lessonId: lesson.id,
-        score,
-        total,
-      },
-      created_at: new Date().toISOString(),
-    };
-    try { await enqueueAttempt(record); } catch { }
-
-    // Also send mastery update if the lesson has competency indicators
+    // Send mastery update if the lesson has competency indicators
     const competencyCode: string | undefined = (lesson.competencyIndicators && lesson.competencyIndicators[0]) || undefined;
     if (competencyCode && total > 0) {
       const percent = Math.round((score / total) * 100);

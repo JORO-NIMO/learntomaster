@@ -35,7 +35,6 @@ import Community from "./pages/Community";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import PublicSubjects from "./pages/PublicSubjects";
-import OnlineSync from "./components/OnlineSync";
 import RoleBasedRoute from "./components/RoleBasedRoute";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 
@@ -47,8 +46,6 @@ const App = () => {
       <HelmetProvider>
         <TooltipProvider>
           <Toaster />
-          {/* Register online event to sync queued items when connection is restored */}
-          <OnlineSync />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
