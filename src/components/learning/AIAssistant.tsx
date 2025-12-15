@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Send, User, Loader2, Sparkles, X, Minimize2, Maximize2 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
@@ -40,6 +41,15 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
     const [showQuizForm, setShowQuizForm] = useState(false);
     const [quizTopic, setQuizTopic] = useState('');
     const [quizCompetency, setQuizCompetency] = useState('');
+    const competencyOptions = [
+        'MTH-ALG-01',
+        'MTH-ALG-02',
+        'MTH-CAL-01',
+        'PHY-MEC-01',
+        'PHY-ELC-01',
+        'CHE-ORG-01',
+        'BIO-GEN-01'
+    ];
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -163,11 +173,23 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
                                         onChange={(e) => setQuizTopic(e.target.value)}
                                         placeholder="Topic (e.g., Quadratic Equations)"
                                     />
-                                    <Input
-                                        value={quizCompetency}
-                                        onChange={(e) => setQuizCompetency(e.target.value)}
-                                        placeholder="Competency code (e.g., MTH-ALG-01)"
-                                    />
+                                    <div className="space-y-2">
+                                        <Select onValueChange={(v) => setQuizCompetency(v)} value={quizCompetency || undefined}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select competency" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {competencyOptions.map((c) => (
+                                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Input
+                                            value={quizCompetency}
+                                            onChange={(e) => setQuizCompetency(e.target.value)}
+                                            placeholder="Or type custom code (e.g., MTH-ALG-01)"
+                                        />
+                                    </div>
                                     <div className="flex gap-2">
                                         <Button
                                             size="sm"
