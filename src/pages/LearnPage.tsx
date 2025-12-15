@@ -133,6 +133,16 @@ const LearnPage = () => {
       created_at: new Date().toISOString(),
     };
     try { await enqueueAttempt(record); } catch { }
+
+    // Also send mastery update if the lesson has competency indicators
+    const competencyCode: string | undefined = (lesson.competencyIndicators && lesson.competencyIndicators[0]) || undefined;
+    if (competencyCode && total > 0) {
+      const percent = Math.round((score / total) * 100);
+      // Fire and forget mastery update; best-effort
+      import('@/lib/ai').then(mod => {
+        mod.updateMastery(competencyCode, percent, 3).catch(() => {});
+      });
+    }
   };
 
   if (viewMode === 'quiz') {
@@ -162,6 +172,7 @@ const LearnPage = () => {
 
             <QuizComponent
               questions={mockQuizQuestions}
+              competencyCode={(lesson.competencyIndicators && lesson.competencyIndicators[0]) || undefined}
               onComplete={handleQuizComplete}
             />
           </div>

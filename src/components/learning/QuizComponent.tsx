@@ -21,12 +21,14 @@ import { cn } from '@/lib/utils';
 interface QuizComponentProps {
   questions?: Question[];
   topic?: string; // If provided, fetches questions from AI
+  competencyCode?: string; // CBC competency code to update mastery for
   onComplete?: (score: number, total: number) => void;
 }
 
 export const QuizComponent = ({ 
   questions: initialQuestions,
   topic,
+  competencyCode,
   onComplete 
 }: QuizComponentProps) => {
   const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
@@ -38,6 +40,13 @@ export const QuizComponent = ({
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [isComplete, setIsComplete] = useState(false);
+  
+  // lazy import to avoid cycle at module top
+  const scoreToDifficulty = (d: Question['difficulty']): number => {
+    if (d === 'easy') return 2;
+    if (d === 'hard') return 4;
+    return 3;
+  };
 
   useEffect(() => {
       if (topic && (!initialQuestions || initialQuestions.length === 0)) {
@@ -114,7 +123,20 @@ export const QuizComponent = ({
       setShowHint(false);
     } else {
       setIsComplete(true);
-      onComplete?.(score, questions.reduce((acc, q) => acc + q.points, 0));
+      const totalPts = questions.reduce((acc, q) => acc + q.points, 0);
+      onComplete?.(score, totalPts);
+      // Send mastery update if competency provided
+      if (competencyCode) {
+        const percent = totalPts > 0 ? Math.round((score / totalPts) * 100) : 0;
+        // average difficulty across questions
+        const avgDiff = Math.round(
+          questions.reduce((acc, q) => acc + scoreToDifficulty(q.difficulty), 0) / questions.length
+        ) || 3;
+        // Fire and forget
+        import('@/lib/ai').then(mod => {
+          mod.updateMastery(competencyCode, percent, avgDiff).catch(() => {});
+        });
+      }
     }
   };
   

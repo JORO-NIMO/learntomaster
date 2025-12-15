@@ -57,6 +57,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId }) => {
                 ? JSON.parse(localStorage.getItem('l2m_server_session_v1') || '{}').token
                 : null;
 
+            // Build full message history for better context
+            const history = messages.map(m => ({ role: m.role, content: m.content }));
+
             const response = await fetch(`${SERVER_URL}/api/v1/ai/chat`, {
                 method: 'POST',
                 headers: {
@@ -64,7 +67,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId }) => {
                     'Authorization': token ? `Bearer ${token}` : ''
                 },
                 body: JSON.stringify({
-                    message: userMessage,
+                    messages: [...history, { role: 'user', content: userMessage }],
                     context: {
                         subject: context || 'General',
                         lesson_id: lessonId,

@@ -55,3 +55,19 @@ export const aiService = {
     return res.json();
   }
 };
+
+// Mastery/Competence updates
+export async function updateMastery(competencyCode: string, scorePercent: number, difficulty: number = 3) {
+  const headers = await getAuthHeader();
+  const res = await fetch(`${SERVER_BASE}/api/v1/ai/mastery/update`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ competency_code: competencyCode, score: Math.round(scorePercent), difficulty })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Failed to update mastery (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
