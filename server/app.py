@@ -148,6 +148,9 @@ def require_auth(f):
     """Decorator to require valid Supabase JWT authentication"""
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Let CORS preflight pass without auth
+        if request.method == 'OPTIONS':
+            return ('', 204)
         auth_header = request.headers.get('Authorization', '')
         
         if not auth_header or not auth_header.startswith('Bearer '):
