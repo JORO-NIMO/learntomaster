@@ -28,6 +28,7 @@ frontend_origins = [
     "https://learn2master-frontend.onrender.com",
     "http://localhost:5173",
     "http://localhost:8080",
+    "http://localhost:8081",
     "http://localhost:3000",
 ]
 CORS(app, resources={r"/*": {"origins": frontend_origins}}, supports_credentials=True)
