@@ -2,7 +2,7 @@ import { mockRecommendations } from '@/data/mockData';
 import { AdaptiveRecommendation } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
-const SERVER_BASE = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+const SERVER_BASE = import.meta.env.VITE_SERVER_URL || 'https://learn2master.onrender.com';
 
 async function getAuthHeader() {
   const { data: { session } } = await supabase.auth.getSession();

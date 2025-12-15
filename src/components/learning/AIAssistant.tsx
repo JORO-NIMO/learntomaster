@@ -58,7 +58,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
         setLoading(true);
 
         try {
-            const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+            const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://learn2master.onrender.com';
             const token = localStorage.getItem('l2m_server_session_v1')
                 ? JSON.parse(localStorage.getItem('l2m_server_session_v1') || '{}').token
                 : null;

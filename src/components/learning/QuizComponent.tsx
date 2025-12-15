@@ -58,7 +58,7 @@ export const QuizComponent = ({
       setLoading(true);
       try {
           const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/quiz`, {
+          const res = await fetch(`${import.meta.env.VITE_SERVER_URL || 'https://learn2master.onrender.com'}/api/v1/ai/quiz`, {
               method: 'POST',
               headers: {
                   'Authorization': `Bearer ${session?.access_token}`,
