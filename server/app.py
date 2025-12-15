@@ -160,9 +160,17 @@ def require_auth(f):
     """Decorator to require valid Supabase JWT authentication"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Let CORS preflight pass without auth
+        # Let CORS preflight pass without auth - return proper Response
         if request.method == 'OPTIONS':
-            return ('', 204)
+            from flask import make_response
+            response = make_response('', 204)
+            origin = request.headers.get('Origin')
+            if origin in frontend_origins:
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+            return response
         auth_header = request.headers.get('Authorization', '')
         
         if not auth_header or not auth_header.startswith('Bearer '):
