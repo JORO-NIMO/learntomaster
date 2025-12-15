@@ -31,7 +31,14 @@ frontend_origins = [
     "http://localhost:8081",
     "http://localhost:3000",
 ]
-CORS(app, resources={r"/*": {"origins": frontend_origins}}, supports_credentials=True)
+# Allow auth headers for Supabase JWT and JSON payloads
+CORS(
+    app,
+    resources={r"/*": {"origins": frontend_origins}},
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+)
 
 # Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///data.db')
