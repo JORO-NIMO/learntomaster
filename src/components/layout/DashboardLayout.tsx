@@ -19,7 +19,7 @@ export const DashboardLayout = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -30,14 +30,14 @@ export const DashboardLayout = ({
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-card border-r transition-transform duration-200 ease-in-out lg:translate-x-0 lg:fixed lg:h-screen",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <DashboardSidebar />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen lg:ml-72 transition-all duration-200 ease-in-out">
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur px-6">
           <Button

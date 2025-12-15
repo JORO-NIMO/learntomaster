@@ -45,7 +45,7 @@ export const DashboardSidebar = () => {
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-sidebar text-sidebar-foreground min-h-screen fixed left-0 top-0">
+    <aside className="flex flex-col w-full h-full bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-2">
