@@ -17,9 +17,10 @@ interface Message {
 interface AIAssistantProps {
     context?: string; // Current lesson context or subject
     lessonId?: string;
+    onStartSmartQuiz?: (topic: string, competencyCode: string) => void;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId }) => {
+const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSmartQuiz }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
@@ -34,6 +35,11 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
     const user = getCurrentUser();
+
+    // Smart Quiz quick action state
+    const [showQuizForm, setShowQuizForm] = useState(false);
+    const [quizTopic, setQuizTopic] = useState('');
+    const [quizCompetency, setQuizCompetency] = useState('');
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -125,6 +131,17 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId }) => {
                     <CardTitle className="text-sm font-medium">Study Assistant</CardTitle>
                 </div>
                 <div className="flex items-center gap-1">
+                    {onStartSmartQuiz && !isMinimized && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-primary-foreground hover:bg-white/20"
+                            onClick={() => setShowQuizForm(v => !v)}
+                            title="Start Smart Quiz"
+                        >
+                            Smart Quiz
+                        </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-primary-foreground hover:bg-white/20" onClick={() => setIsMinimized(!isMinimized)}>
                         {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                     </Button>
@@ -137,6 +154,37 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId }) => {
             {!isMinimized && (
                 <>
                     <CardContent className="p-0 flex-1 overflow-hidden flex flex-col h-[calc(100%-110px)]">
+                        {showQuizForm && onStartSmartQuiz && (
+                            <div className="p-3 border-b bg-background/80">
+                                <div className="text-xs font-medium mb-2 text-foreground">Start Smart Quiz</div>
+                                <div className="flex flex-col gap-2">
+                                    <Input
+                                        value={quizTopic}
+                                        onChange={(e) => setQuizTopic(e.target.value)}
+                                        placeholder="Topic (e.g., Quadratic Equations)"
+                                    />
+                                    <Input
+                                        value={quizCompetency}
+                                        onChange={(e) => setQuizCompetency(e.target.value)}
+                                        placeholder="Competency code (e.g., MTH-ALG-01)"
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            disabled={!quizTopic.trim() || !quizCompetency.trim()}
+                                            onClick={() => {
+                                                onStartSmartQuiz(quizTopic.trim(), quizCompetency.trim());
+                                                setShowQuizForm(false);
+                                                setIsOpen(false);
+                                            }}
+                                        >
+                                            Launch Quiz
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={() => setShowQuizForm(false)}>Cancel</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
                             {messages.map((msg, idx) => (
                                 <div

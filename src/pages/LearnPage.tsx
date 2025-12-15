@@ -45,6 +45,9 @@ const LearnPage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [notes, setNotes] = useState<string>('');
   const [isNoteOpen, setIsNoteOpen] = useState(false);
+  // Smart quiz state
+  const [quizTopic, setQuizTopic] = useState<string | undefined>(undefined);
+  const [quizCompetency, setQuizCompetency] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -118,6 +121,12 @@ const LearnPage = () => {
     }
   };
 
+  const handleStartSmartQuiz = (topic: string, competencyCode: string) => {
+    setQuizTopic(topic);
+    setQuizCompetency(competencyCode);
+    setViewMode('quiz');
+  };
+
   const handleQuizComplete = async (score: number, total: number) => {
     const u = getCurrentUser();
     const client_id = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `att-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -171,8 +180,9 @@ const LearnPage = () => {
             </div>
 
             <QuizComponent
-              questions={mockQuizQuestions}
-              competencyCode={(lesson.competencyIndicators && lesson.competencyIndicators[0]) || undefined}
+              questions={quizTopic ? [] : mockQuizQuestions}
+              topic={quizTopic}
+              competencyCode={quizCompetency || (lesson.competencyIndicators && lesson.competencyIndicators[0])}
               onComplete={handleQuizComplete}
             />
           </div>
@@ -401,7 +411,7 @@ const LearnPage = () => {
         </div>
       </DashboardLayout>
 
-      <AIAssistant context={lesson.title} lessonId={lesson.id} />
+      <AIAssistant context={lesson.title} lessonId={lesson.id} onStartSmartQuiz={handleStartSmartQuiz} />
     </>
   );
 };
