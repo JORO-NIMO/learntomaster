@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => ({
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 31536000 },
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 }, // 1 year
               cacheableResponse: { statuses: [0, 200] }
             }
           },
@@ -67,29 +67,32 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'api-recommendations',
               networkTimeoutSeconds: 3,
-              expiration: { maxEntries: 30, maxAgeSeconds: 600 }
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 } // 1 hour
             }
           },
           {
-            urlPattern: /\/api\/v1\/(lessons|subjects|classes|assignments).*/i,
+            urlPattern: /\/api\/v1\/(lessons|subjects|classes|assignments|users\/profile).*/i,
             handler: 'NetworkFirst',
             method: 'GET',
             options: {
               cacheName: 'api-content',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 } // 1 week
+              networkTimeoutSeconds: 2, // Fast fallback to cache
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 14 } // 2 weeks
             }
           },
           {
             urlPattern: /\/api\/v1\/static\/.*/i,
-            handler: 'StaleWhileRevalidate',
+            handler: 'CacheFirst', // Aggressive caching for static assets
             method: 'GET',
             options: {
-              cacheName: 'static-assets',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 } // 30 days
+              cacheName: 'static-content',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 } // 30 days
             }
           }
-        ]
+        ],
+        // Offline fallback for navigation
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//]
       }
     })
   ].filter(Boolean),

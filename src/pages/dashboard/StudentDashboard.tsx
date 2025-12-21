@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { LearningPathway } from '@/components/dashboard/LearningPathway';
 import { MasteryTracker } from '@/components/dashboard/MasteryTracker';
 import { QuizComponent } from '@/components/learning/QuizComponent';
+import { QuestLog } from '@/components/dashboard/QuestLog';
 
 interface LearnerProfile {
     mastery_level: Record<string, number>;
@@ -181,7 +182,7 @@ export default function StudentDashboard() {
             <div className="grid gap-8 lg:grid-cols-3">
                 {/* Main Content Area */}
                 <div className="lg:col-span-2 space-y-8">
-                    
+
                     {/* Adaptive Learning Pathway */}
                     <LearningPathway />
 
@@ -244,7 +245,10 @@ export default function StudentDashboard() {
                 {/* Sidebar Area */}
                 <div className="space-y-8">
                     <Achievements profile={profile} />
-                    
+
+                    {/* [NEW] Quest Mode */}
+                    <QuestLog profile={profile} />
+
                     <Card className="bg-slate-900 text-white border-slate-800">
                         <CardHeader>
                             <CardTitle className="text-white">Adaptive Assessment</CardTitle>

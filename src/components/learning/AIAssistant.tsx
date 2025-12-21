@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, User, Loader2, Sparkles, X, Minimize2, Maximize2 } from 'lucide-react';
+import { Bot, Send, User, Loader2, Sparkles, X, Minimize2, Maximize2, Mic, Volume2, VolumeX } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,7 +33,14 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [soundEnabled, setSoundEnabled] = useState(true);
+
     const scrollRef = useRef<HTMLDivElement>(null);
+    const recognitionRef = useRef<any>(null);
+    const synthRef = useRef<SpeechSynthesis>(window.speechSynthesis);
+
     const { toast } = useToast();
     const user = getCurrentUser();
 
@@ -51,12 +58,83 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
         'BIO-GEN-01'
     ];
 
+    // Initialize Speech Recognition
+    useEffect(() => {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = false;
+            recognitionRef.current.interimResults = false;
+            recognitionRef.current.lang = 'en-US';
+
+            recognitionRef.current.onresult = (event: any) => {
+                const transcript = event.results[0][0].transcript;
+                setInput(transcript);
+                setIsListening(false);
+                // Auto-send if high confidence? For now, let user review.
+            };
+
+            recognitionRef.current.onerror = (event: any) => {
+                console.error('Speech recognition error', event.error);
+                setIsListening(false);
+                toast({ title: "Voice Error", description: "Could not understand audio.", variant: "destructive" });
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsListening(false);
+            };
+        } else {
+            // Fallback or disable mic
+        }
+
+        return () => {
+            if (synthRef.current) synthRef.current.cancel();
+        }
+    }, []);
+
     // Scroll to bottom on new message
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages, isOpen]);
+
+    const speak = (text: string) => {
+        if (!soundEnabled || !synthRef.current) return;
+
+        // Cancel current speaking
+        synthRef.current.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+
+        // Use a natural sounding voice if available
+        const voices = synthRef.current.getVoices();
+        const preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices[0];
+        if (preferredVoice) utterance.voice = preferredVoice;
+
+        synthRef.current.speak(utterance);
+    };
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+        } else {
+            if (!recognitionRef.current) {
+                toast({ title: "Not Supported", description: "Your browser does not support voice input.", variant: "destructive" });
+                return;
+            }
+            try {
+                recognitionRef.current.start();
+                setIsListening(true);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -97,12 +175,16 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
             }
 
             const data = await response.json();
+            const aiResponse = data.response;
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: data.response,
+                content: aiResponse,
                 timestamp: new Date()
             }]);
+
+            // Speak response
+            speak(aiResponse);
 
         } catch (error) {
             console.error('AI Chat Error:', error);
@@ -112,11 +194,13 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
                 description: "Could not connect to AI service. Please try again later.",
             });
             // Add error message to chat
+            const errorMsg = "I'm having trouble connecting right now. Please check your connection or try again later.";
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I'm having trouble connecting right now. Please check your connection or try again later.",
+                content: errorMsg,
                 timestamp: new Date()
             }]);
+            speak(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -139,8 +223,13 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
                 <div className="flex items-center gap-2">
                     <Bot className="w-5 h-5" />
                     <CardTitle className="text-sm font-medium">Study Assistant</CardTitle>
+                    {isListening && <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-2" title="Listening" />}
+                    {isSpeaking && <div className="flex items-center gap-1 ml-2"><span className="w-1 h-3 bg-white animate-[pulse_0.5s_ease-in-out_infinite]"></span><span className="w-1 h-2 bg-white animate-[pulse_0.5s_ease-in-out_infinite_0.2s]"></span><span className="w-1 h-3 bg-white animate-[pulse_0.5s_ease-in-out_infinite_0.4s]"></span></div>}
                 </div>
                 <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-primary-foreground hover:bg-white/20" onClick={() => setSoundEnabled(!soundEnabled)}>
+                        {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                    </Button>
                     {onStartSmartQuiz && !isMinimized && (
                         <Button
                             variant="ghost"
@@ -215,8 +304,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
                                 >
                                     <div
                                         className={`max-w-[80%] rounded-lg p-3 text-sm ${msg.role === 'user'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-muted text-muted-foreground'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'bg-muted text-muted-foreground'
                                             }`}
                                     >
                                         {msg.role === 'assistant' && (
@@ -241,11 +330,21 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, lessonId, onStartSma
                     </CardContent>
 
                     <CardFooter className="p-3 bg-background border-t">
-                        <form onSubmit={handleSendMessage} className="flex w-full gap-2">
+                        <form onSubmit={handleSendMessage} className="flex w-full gap-2 items-center">
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant={isListening ? "destructive" : "ghost"}
+                                onClick={toggleListening}
+                                className={isListening ? "animate-pulse" : ""}
+                                title="Use Voice Input"
+                            >
+                                <Mic className="w-4 h-4" />
+                            </Button>
                             <Input
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask explanation..."
+                                placeholder={isListening ? "Listening..." : "Ask explanation..."}
                                 disabled={loading}
                                 className="flex-1"
                             />
