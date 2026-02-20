@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import { registerUser, login, getSchools, getUserRole, getCurrentUser, type UserRole } from '@/lib/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -36,8 +36,17 @@ const LoginPage: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      toast({
+        variant: 'destructive',
+        title: 'Supabase not configured',
+        description: 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable authentication.'
+      });
+      return;
+    }
+
     getSchools().then(setSchools);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     // Check if already logged in
@@ -46,6 +55,8 @@ const LoginPage: React.FC = () => {
       redirectBasedOnRole(currentUser.role);
       return;
     }
+
+    if (!isSupabaseConfigured) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
