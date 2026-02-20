@@ -1,7 +1,7 @@
 // Authentication bridge for Learn2Master
 // Uses Supabase for primary auth, localStorage as offline fallback
 
-import { supabase } from '@/integrations/supabase/client';
+import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 export type UserRole = 'student' | 'teacher' | 'admin' | 'school_admin';
@@ -22,6 +22,18 @@ export type AuthUser = {
 };
 
 const LOCAL_SESSION_KEY = 'l2m_session_v3';
+
+function isNetworkFetchError(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !("message" in error)) return false;
+  const message = String((error as { message?: string }).message || '').toLowerCase();
+  return message.includes('failed to fetch') || message.includes('networkerror') || message.includes('load failed');
+}
+
+function assertSupabaseConfigured() {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+}
 
 // Convert Supabase user to AuthUser format
 function supabaseUserToAuthUser(user: User, profile: any, role: UserRole): AuthUser {
@@ -63,6 +75,8 @@ export function setLocalUser(user: AuthUser | null) {
 
 // Get user role from database
 export async function getUserRole(userId: string): Promise<UserRole> {
+  if (!isSupabaseConfigured) return 'student';
+
   try {
     const { data, error } = await supabase
       .from('user_roles')
@@ -79,6 +93,8 @@ export async function getUserRole(userId: string): Promise<UserRole> {
 
 // Get user profile from database
 export async function getProfile(userId: string) {
+  if (!isSupabaseConfigured) return null;
+
   try {
     const { data } = await supabase
       .from('profiles')
@@ -93,6 +109,11 @@ export async function getProfile(userId: string) {
 
 // Initialize auth state from Supabase
 export async function initializeAuth(): Promise<AuthUser | null> {
+  if (!isSupabaseConfigured) {
+    setLocalUser(null);
+    return null;
+  }
+
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
@@ -123,6 +144,7 @@ export async function registerUser(
   extraData?: { lin?: string; tmis?: string; nin?: string; school_id?: string }
 ): Promise<AuthUser> {
   try {
+    assertSupabaseConfigured();
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -157,6 +179,9 @@ export async function registerUser(
     return authUser;
   } catch (error) {
     console.error('Register error:', error);
+    if (isNetworkFetchError(error)) {
+      throw new Error('Unable to reach Supabase. Check VITE_SUPABASE_URL and your DNS/network connection.');
+    }
     throw error;
   }
 }
@@ -164,6 +189,7 @@ export async function registerUser(
 // Sign in an existing user
 export async function login(email: string, password: string): Promise<AuthUser> {
   try {
+    assertSupabaseConfigured();
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -185,6 +211,9 @@ export async function login(email: string, password: string): Promise<AuthUser> 
     return authUser;
   } catch (error) {
     console.error('Login error:', error);
+    if (isNetworkFetchError(error)) {
+      throw new Error('Unable to reach Supabase. Check VITE_SUPABASE_URL and your DNS/network connection.');
+    }
     throw error;
   }
 }
@@ -192,6 +221,7 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 // Sign out
 export async function logout() {
   setLocalUser(null);
+  if (!isSupabaseConfigured) return;
   await supabase.auth.signOut();
 }
 
@@ -202,6 +232,8 @@ export function clearSession() {
 
 // Get schools for registration dropdown
 export async function getSchools() {
+  if (!isSupabaseConfigured) return [];
+
   try {
     const { data } = await supabase
       .from('schools')

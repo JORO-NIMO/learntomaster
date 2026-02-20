@@ -7,10 +7,16 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const hasValidSupabaseConfig = Boolean(SUPABASE_URL && SUPABASE_KEY);
+
+// Set to "true" only when you explicitly want background refresh calls.
+// Keeping it disabled by default avoids noisy retry loops when DNS/network is unstable.
+const shouldAutoRefresh = import.meta.env.VITE_SUPABASE_AUTO_REFRESH === 'true';
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
+if (!hasValidSupabaseConfig) {
   console.error('Supabase environment variables are missing!');
   console.error('VITE_SUPABASE_URL:', SUPABASE_URL);
   console.error('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -18,16 +24,18 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Please create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-// Create client even with missing vars to avoid breaking the app
-// Will fail at runtime when trying to use auth
+export const isSupabaseConfigured = hasValidSupabaseConfig;
+
+// Create client even with missing vars to avoid breaking the app.
+// Calls are guarded in auth helpers so the UI can degrade gracefully.
 export const supabase = createClient<Database>(
   SUPABASE_URL || 'https://placeholder.supabase.co',
   SUPABASE_KEY || 'placeholder-key',
   {
     auth: {
       storage: localStorage,
-      persistSession: true,
-      autoRefreshToken: true,
+      persistSession: hasValidSupabaseConfig,
+      autoRefreshToken: hasValidSupabaseConfig && shouldAutoRefresh,
     }
   }
 );
