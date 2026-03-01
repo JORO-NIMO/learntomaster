@@ -1,22 +1,10 @@
-import { getCurrentUser } from './auth';
+import { getAuthHeaders } from './http';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
-const getHeaders = () => {
-    const user = getCurrentUser();
-    const token = localStorage.getItem('l2m_server_session_v1')
-        ? JSON.parse(localStorage.getItem('l2m_server_session_v1') || '{}').token
-        : null;
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : ''
-    };
-};
-
 export const schoolService = {
-    // School Management
     async getSchools() {
-        const res = await fetch(`${SERVER_URL}/api/v1/schools`, { headers: getHeaders() });
+        const res = await fetch(`${SERVER_URL}/api/v1/schools`, { headers: await getAuthHeaders() });
         if (!res.ok) throw new Error('Failed to fetch schools');
         return await res.json();
     },
@@ -24,16 +12,15 @@ export const schoolService = {
     async createSchool(data: any) {
         const res = await fetch(`${SERVER_URL}/api/v1/schools`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await getAuthHeaders(),
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error('Failed to create school');
         return await res.json();
     },
 
-    // Teacher Dashboard Functions
     async getClasses() {
-        const res = await fetch(`${SERVER_URL}/api/v1/classes`, { headers: getHeaders() });
+        const res = await fetch(`${SERVER_URL}/api/v1/classes`, { headers: await getAuthHeaders() });
         if (!res.ok) throw new Error('Failed to fetch classes');
         return await res.json();
     },
@@ -41,7 +28,7 @@ export const schoolService = {
     async createClass(data: any) {
         const res = await fetch(`${SERVER_URL}/api/v1/classes`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await getAuthHeaders(),
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error('Failed to create class');
@@ -50,7 +37,7 @@ export const schoolService = {
 
     async getAssignments(classId?: string) {
         const url = classId ? `${SERVER_URL}/api/v1/assignments?class_id=${classId}` : `${SERVER_URL}/api/v1/assignments`;
-        const res = await fetch(url, { headers: getHeaders() });
+        const res = await fetch(url, { headers: await getAuthHeaders() });
         if (!res.ok) throw new Error('Failed to fetch assignments');
         return await res.json();
     },
@@ -58,7 +45,7 @@ export const schoolService = {
     async createAssignment(data: any) {
         const res = await fetch(`${SERVER_URL}/api/v1/assignments`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await getAuthHeaders(),
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error('Failed to create assignment');

@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { mockQuizQuestions } from '@/data/mockData';
 import { Question } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -72,18 +71,20 @@ export const QuizComponent = ({
               // Assuming AI returns list of { question, options, correct_answer, explanation }
               // We need to map it to our Question interface
               const mapped: Question[] = data.map((q: any, i: number) => ({
-                  id: i,
-                  text: q.question,
-                  options: q.options,
-                  correctAnswer: q.options[q.correct_answer] || q.correct_answer, // Handle index or string
-                  explanation: q.explanation,
+                  id: String(i),
+                  type: "multiple_choice",
+                  question: q.question,
+                  options: q.options || [],
+                  correctAnswer: Array.isArray(q.options) && Number.isInteger(q.correct_answer) ? q.options[q.correct_answer] : q.correct_answer,
+                  explanation: q.explanation || "",
+                  difficulty: "medium",
                   points: 10
               }));
               setQuestions(mapped);
           }
       } catch (e) {
           console.error(e);
-          setQuestions(mockQuizQuestions); // Fallback
+          setQuestions([])
       } finally {
           setLoading(false);
       }

@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockRecommendations } from '@/data/mockData';
 import { getCurrentUser } from '@/lib/auth';
 import { getRecommendationsForUser } from '@/lib/ai';
 import { useEffect, useState } from 'react';
 import { BookOpen, Target, RefreshCw, Sparkles, Clock, ArrowRight } from 'lucide-react';
+import { AdaptiveRecommendation } from '@/types';
 
 const getIcon = (type: string) => {
   switch (type) {
@@ -32,12 +32,12 @@ const getPriorityColor = (priority: string) => {
 };
 
 export const RecommendationsCard = () => {
-  const [recs, setRecs] = useState(() => mockRecommendations);
+  const [recs, setRecs] = useState<AdaptiveRecommendation[]>([]);
 
   useEffect(() => {
     const u = getCurrentUser();
-    if (!u) return;
-    getRecommendationsForUser(u.lin).then(r => setRecs(r)).catch(() => setRecs(mockRecommendations));
+    if (!u?.lin) return;
+    getRecommendationsForUser(u.lin).then(setRecs).catch(() => setRecs([]));
   }, []);
 
   return (
@@ -49,42 +49,28 @@ export const RecommendationsCard = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {recs.length === 0 && <p className="text-sm text-muted-foreground">No recommendations available yet.</p>}
         {recs.map((rec, index) => (
-          <div
-            key={index}
-            className="group p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-          >
+          <div key={index} className="group p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-primary shrink-0">
                 {getIcon(rec.type)}
               </div>
-              
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-foreground capitalize">
-                    {rec.type}
-                  </span>
-                  <Badge variant={getPriorityColor(rec.priority)} className="text-xs">
-                    {rec.priority}
-                  </Badge>
+                  <span className="text-sm font-medium text-foreground capitalize">{rec.type}</span>
+                  <Badge variant={getPriorityColor(rec.priority)} className="text-xs">{rec.priority}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {rec.reason}
-                </p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{rec.reason}</p>
                 <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  {rec.estimatedTime} min
+                  <Clock className="w-3 h-3" />{rec.estimatedTime} min
                 </div>
               </div>
-              
               <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
             </div>
           </div>
         ))}
-        
-        <Button variant="outline" className="w-full mt-2">
-          View More Recommendations
-        </Button>
+        <Button variant="outline" className="w-full mt-2">View More Recommendations</Button>
       </CardContent>
     </Card>
   );
