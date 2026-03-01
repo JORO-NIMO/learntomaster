@@ -28,6 +28,7 @@ export type DashboardRecommendation = {
 };
 
 type ProgressEntry = {
+  subject?: string;
   score?: number;
   completed?: number;
   time_spent?: number;
@@ -87,15 +88,47 @@ function buildStats(progressList: ProgressEntry[]): DashboardStats {
 
 export const dashboardService = {
   async getSubjectProgress(): Promise<SubjectProgressItem[]> {
-    const classesResponse = await schoolService.getClasses();
+    const [classesResponse, progressResponse] = await Promise.all([
+      schoolService.getClasses().catch(() => ({ classes: [] })),
+      lessonService.getProgress().catch(() => ({ progress: [] })),
+    ]);
+
     const classes = classesResponse?.classes || (Array.isArray(classesResponse) ? classesResponse : []);
+    const progressList: ProgressEntry[] = progressResponse?.progress || [];
+
+    const subjectMap = new Map<string, { totalLessons: number; completedLessons: number; totalCompletion: number }>();
+
+    for (const entry of progressList) {
+      const rawSubject = typeof entry.lesson_id === 'string' ? entry.lesson_id : '';
+      const subject = entry.subject || rawSubject.split('-')[0] || 'General';
+      const existing = subjectMap.get(subject) || { totalLessons: 0, completedLessons: 0, totalCompletion: 0 };
+
+      const completion = Math.max(0, Math.min(100, toNumber(entry.completed)));
+      existing.totalLessons += 1;
+      existing.completedLessons += completion >= 100 ? 1 : 0;
+      existing.totalCompletion += completion;
+
+      subjectMap.set(subject, existing);
+    }
+
+    const subjectProgressFromData: SubjectProgressItem[] = Array.from(subjectMap.entries()).map(([subject, stats], index) => ({
+      id: `progress-${index}-${subject}`,
+      subject,
+      progress: stats.totalLessons > 0 ? Math.round(stats.totalCompletion / stats.totalLessons) : 0,
+      completed: stats.completedLessons,
+      lessons: stats.totalLessons,
+    }));
+
+    if (subjectProgressFromData.length > 0) {
+      return subjectProgressFromData.sort((a, b) => b.progress - a.progress);
+    }
 
     return classes.map((c: any) => ({
       id: String(c.id),
-      subject: c.name || c.code || 'Subject',
-      progress: Math.max(0, Math.min(100, Number(c.progress || 0))),
-      completed: Number(c.lessons_completed || 0),
-      lessons: Number(c.total_lessons || 0),
+      subject: c.subject || c.name || c.code || 'Subject',
+      progress: 0,
+      completed: 0,
+      lessons: 0,
     }));
   },
 
