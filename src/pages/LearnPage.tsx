@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AIAssistant from '@/components/learning/AIAssistant';
 import { Progress } from '@/components/ui/progress';
-import { mockLessons, mockQuizQuestions } from '@/data/mockData';
 import { getCurrentUser } from '@/lib/auth';
 import { lessonService, Lesson } from '@/lib/lessonService';
 import {
@@ -53,16 +52,8 @@ const LearnPage = () => {
       if (!lessonId) return;
       setLoading(true);
       try {
-        // try fetching real, fallback to mock for now if server not ready with data
-        try {
-          const data = await lessonService.getLesson(lessonId);
-          setLesson(data);
-        } catch (e) {
-          console.warn('Using mock lesson data as fallback');
-          // Find mock lesson or default to first
-          const mock = mockLessons.find(l => l.id === lessonId) || mockLessons[0];
-          setLesson(mock);
-        }
+        const data = await lessonService.getLesson(lessonId);
+        setLesson(data);
       } catch (err: any) {
         setError(err.message || 'Failed to load lesson');
         toast({ variant: "destructive", title: "Error", description: "Failed to load lesson content" });
@@ -163,7 +154,7 @@ const LearnPage = () => {
             </div>
 
             <QuizComponent
-              questions={quizTopic ? [] : mockQuizQuestions}
+              questions={undefined}
               topic={quizTopic}
               competencyCode={quizCompetency || (lesson.competencyIndicators && lesson.competencyIndicators[0])}
               onComplete={handleQuizComplete}
