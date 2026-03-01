@@ -30,14 +30,6 @@ interface AssessmentData {
   rubric?: Record<string, string>;
 }
 
-const FALLBACK_RADAR = [
-  { subject: 'Math', mastery: 0.6, fullMark: 1 },
-  { subject: 'Physics', mastery: 0.4, fullMark: 1 },
-  { subject: 'Biology', mastery: 0.8, fullMark: 1 },
-  { subject: 'Chemistry', mastery: 0.5, fullMark: 1 },
-  { subject: 'History', mastery: 0.7, fullMark: 1 },
-];
-
 export default function StudentDashboard() {
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,7 +110,7 @@ export default function StudentDashboard() {
   };
 
   const radarData = useMemo(() => {
-    if (!profile?.mastery_level) return FALLBACK_RADAR;
+    if (!profile?.mastery_level) return [];
 
     return Object.entries(profile.mastery_level).map(([competencyCode, mastery]) => ({
       subject: competencyCode.split('-')[1] || competencyCode,
@@ -129,6 +121,7 @@ export default function StudentDashboard() {
 
   const strongAreas = profile?.strengths?.length ?? 0;
   const weakAreas = profile?.weaknesses?.length ?? 0;
+  const focusRecommendation = profile?.weaknesses?.[0] || 'Continue reviewing your lowest competency area';
 
   if (loading) {
     return (
@@ -215,7 +208,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
-                Focus recommendation: <span className="font-medium text-foreground">Statistics remediation</span>
+                Focus recommendation: <span className="font-medium text-foreground">{focusRecommendation}</span>
               </div>
               <Button className="w-full" size="lg" onClick={generateAssessment} disabled={generating}>
                 {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
