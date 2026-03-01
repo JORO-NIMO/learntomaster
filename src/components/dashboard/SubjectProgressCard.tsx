@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { mockSubjectProgress } from '@/data/mockData';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { dashboardService, SubjectProgressItem } from '@/lib/dashboardService';
 
 const getMasteryVariant = (progress: number) => {
   if (progress >= 80) return 'master';
@@ -20,12 +21,18 @@ const getMasteryLabel = (progress: number) => {
 };
 
 export const SubjectProgressCard = () => {
+  const [subjects, setSubjects] = useState<SubjectProgressItem[]>([]);
+
+  useEffect(() => {
+    dashboardService.getSubjectProgress().then(setSubjects).catch(() => setSubjects([]));
+  }, []);
+
   return (
     <Card variant="default">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Subject Progress</CardTitle>
-        <Link 
-          to="/dashboard/subjects" 
+        <Link
+          to="/dashboard/subjects"
           className="text-sm text-primary hover:text-primary-light transition-colors flex items-center"
         >
           View All
@@ -33,8 +40,11 @@ export const SubjectProgressCard = () => {
         </Link>
       </CardHeader>
       <CardContent className="space-y-5">
-        {mockSubjectProgress.map((subject, index) => (
-          <div key={index} className="group">
+        {subjects.length === 0 && (
+          <p className="text-sm text-muted-foreground">No subject progress available yet.</p>
+        )}
+        {subjects.map((subject) => (
+          <div key={subject.id} className="group">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <span className="font-medium text-sm text-foreground">
@@ -48,8 +58,8 @@ export const SubjectProgressCard = () => {
                 {subject.completed}/{subject.lessons} lessons
               </span>
             </div>
-            <Progress 
-              value={subject.progress} 
+            <Progress
+              value={subject.progress}
               size="sm"
               className="group-hover:h-3 transition-all"
             />

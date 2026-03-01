@@ -1,11 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockWeeklyActivity } from '@/data/mockData';
+import { useEffect, useMemo, useState } from 'react';
+import { dashboardService, WeeklyActivityItem } from '@/lib/dashboardService';
 
 export const WeeklyActivityCard = () => {
-  const maxMinutes = Math.max(...mockWeeklyActivity.map(d => d.minutes));
-  const totalMinutes = mockWeeklyActivity.reduce((acc, d) => acc + d.minutes, 0);
+  const [activity, setActivity] = useState<WeeklyActivityItem[]>([]);
+
+  useEffect(() => {
+    dashboardService.getWeeklyActivity().then(setActivity).catch(() => setActivity([]));
+  }, []);
+
+  const maxMinutes = useMemo(() => Math.max(1, ...activity.map((d) => d.minutes)), [activity]);
+  const totalMinutes = useMemo(() => activity.reduce((acc, d) => acc + d.minutes, 0), [activity]);
   const avgMinutes = Math.round(totalMinutes / 7);
-  
+
   return (
     <Card variant="default">
       <CardHeader>
@@ -19,10 +26,10 @@ export const WeeklyActivityCard = () => {
       </CardHeader>
       <CardContent>
         <div className="flex items-end justify-between gap-2 h-32">
-          {mockWeeklyActivity.map((day, index) => {
+          {activity.map((day, index) => {
             const height = (day.minutes / maxMinutes) * 100;
             const isToday = index === new Date().getDay() - 1 || (new Date().getDay() === 0 && index === 6);
-            
+
             return (
               <div key={day.day} className="flex-1 flex flex-col items-center gap-2">
                 <div className="relative w-full flex-1 flex items-end">
@@ -40,7 +47,7 @@ export const WeeklyActivityCard = () => {
             );
           })}
         </div>
-        
+
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Daily average</span>
           <span className="font-medium text-foreground">{avgMinutes} min</span>
