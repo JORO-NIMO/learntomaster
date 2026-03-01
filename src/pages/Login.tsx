@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
+import { registerUser, login, getSchools, getUserRole, getCurrentUser, clearSession, type UserRole } from '@/lib/auth';
 import { registerUser, login, getSchools, getUserRole, getCurrentUser, type UserRole } from '@/lib/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -48,24 +49,61 @@ const LoginPage: React.FC = () => {
     getSchools().then(setSchools);
   }, [toast]);
 
-  useEffect(() => {
-    // Check if already logged in
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      redirectBasedOnRole(currentUser.role);
+    if (!isRegister || role !== 'teacher') {
+      setSchools([]);
       return;
     }
 
+    let active = true;
+    getSchools().then((data) => {
+      if (active) setSchools(data);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [isRegister, role, toast]);
+
+  useEffect(() => {
+    let subscription: { unsubscribe: () => void } | undefined;
+
+    const setupAuthListener = async () => {
+      if (!isSupabaseConfigured) {
+        clearSession();
+        return;
+      }
+
+      const currentUser = getCurrentUser();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      // Prevent redirect loops caused by stale localStorage sessions
+      if (currentUser && session?.user) {
     if (!isSupabaseConfigured) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const userRole = await getUserRole(session.user.id);
         redirectBasedOnRole(userRole);
+        return;
       }
-    });
 
-    return () => subscription.unsubscribe();
+      if (currentUser && !session?.user) {
+        clearSession();
+      }
+
+      const authSub = supabase.auth.onAuthStateChange(async (event, activeSession) => {
+        if (event === 'SIGNED_IN' && activeSession?.user) {
+          const userRole = await getUserRole(activeSession.user.id);
+          redirectBasedOnRole(userRole);
+        }
+      });
+
+      subscription = authSub.data.subscription;
+    };
+
+    setupAuthListener();
+
+    return () => subscription?.unsubscribe();
   }, []);
 
   const redirectBasedOnRole = (userRole: UserRole) => {

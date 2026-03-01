@@ -85,3 +85,14 @@ Mitigation implemented in this repo:
 - Supabase auto-refresh is now opt-in (`VITE_SUPABASE_AUTO_REFRESH=true`) instead of always on.
 - Auth helpers now return actionable errors for network fetch failures.
 - Login page warns when Supabase env vars are missing.
+
+
+## Known Runtime Error: repeated `schools` 400 responses
+When logs show repeated `schools:1 Failed to load resource: the server responded with a status of 400`, this is usually an application-flow issue rather than DNS failure:
+- The login screen may repeatedly remount due to redirect loops (for example, stale local session data with no active Supabase session).
+- Each remount can retrigger school-loading calls, creating repeated 400 entries.
+
+Mitigation implemented in this repo:
+- Login redirect now validates an active Supabase session before redirecting from cached local user data.
+- Stale local session is cleared when no active server session exists.
+- School list is fetched only when registration is active for teacher role (instead of on every login page mount).
