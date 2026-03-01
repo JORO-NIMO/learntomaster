@@ -75,20 +75,16 @@ export function setLocalUser(user: AuthUser | null) {
 
 // Get user role from database
 export async function getUserRole(userId: string): Promise<UserRole> {
-  if (!isSupabaseConfigured) return 'student';
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
 
-  try {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (error || !data) return 'student';
-    return data.role as UserRole;
-  } catch {
-    return 'student';
-  }
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error || !data) throw new Error('No role assigned for user');
+  return data.role as UserRole;
 }
 
 // Get user profile from database

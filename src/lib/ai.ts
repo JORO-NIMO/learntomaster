@@ -1,4 +1,3 @@
-import { mockRecommendations } from '@/data/mockData';
 import { AdaptiveRecommendation } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,9 +15,10 @@ export async function getRecommendationsForUser(lin: string): Promise<AdaptiveRe
       const data = await res.json();
       if (Array.isArray(data?.recommendations)) return data.recommendations as AdaptiveRecommendation[];
     }
-  } catch {}
-  await new Promise(r => setTimeout(r, 120));
-  return mockRecommendations;
+  } catch (error) {
+    console.error('Failed to load recommendations', error);
+  }
+  return [];
 }
 
 export const aiService = {

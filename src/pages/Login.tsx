@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import { registerUser, login, getSchools, getUserRole, getCurrentUser, clearSession, type UserRole } from '@/lib/auth';
+import { registerUser, login, getSchools, getUserRole, getCurrentUser, type UserRole } from '@/lib/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -45,6 +46,9 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    getSchools().then(setSchools);
+  }, [toast]);
+
     if (!isRegister || role !== 'teacher') {
       setSchools([]);
       return;
@@ -74,6 +78,10 @@ const LoginPage: React.FC = () => {
 
       // Prevent redirect loops caused by stale localStorage sessions
       if (currentUser && session?.user) {
+    if (!isSupabaseConfigured) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
         const userRole = await getUserRole(session.user.id);
         redirectBasedOnRole(userRole);
         return;
