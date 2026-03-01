@@ -1,343 +1,305 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Brain, BookOpen, Target, Sparkles, AlertCircle, TrendingUp, Calendar } from 'lucide-react';
-import { CompetencyRadar } from '@/components/dashboard/CompetencyRadar';
-import { useToast } from "@/hooks/use-toast";
-import { SubjectProgressCard } from '@/components/dashboard/SubjectProgressCard';
-import { Achievements } from '@/components/dashboard/Achievements';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader2, Sparkles, TrendingUp, Target, Calendar, Brain } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { LearningPathway } from '@/components/dashboard/LearningPathway';
+import { SubjectProgressCard } from '@/components/dashboard/SubjectProgressCard';
+import { CompetencyRadar } from '@/components/dashboard/CompetencyRadar';
 import { MasteryTracker } from '@/components/dashboard/MasteryTracker';
-import { QuizComponent } from '@/components/learning/QuizComponent';
+import { Achievements } from '@/components/dashboard/Achievements';
 import { QuestLog } from '@/components/dashboard/QuestLog';
+import { QuizComponent } from '@/components/learning/QuizComponent';
 
 interface LearnerProfile {
-    mastery_level: Record<string, number>;
-    learning_style: string;
-    strengths: string[];
-    weaknesses: string[];
+  mastery_level: Record<string, number>;
+  learning_style: string;
+  strengths: string[];
+  weaknesses: string[];
 }
 
+interface AssessmentData {
+  competency?: string;
+  scenario?: string;
+  instructions?: string;
+  expected_output?: string;
+  rubric?: Record<string, string>;
+}
+
+const FALLBACK_RADAR = [
+  { subject: 'Math', mastery: 0.6, fullMark: 1 },
+  { subject: 'Physics', mastery: 0.4, fullMark: 1 },
+  { subject: 'Biology', mastery: 0.8, fullMark: 1 },
+  { subject: 'Chemistry', mastery: 0.5, fullMark: 1 },
+  { subject: 'History', mastery: 0.7, fullMark: 1 },
+];
+
 export default function StudentDashboard() {
-    const [profile, setProfile] = useState<LearnerProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [generating, setGenerating] = useState(false);
-    const [assessmentData, setAssessmentData] = useState<any>(null);
-    const [showAssessment, setShowAssessment] = useState(false);
-    const [showQuiz, setShowQuiz] = useState(false);
-    const { toast } = useToast();
+  const [profile, setProfile] = useState<LearnerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [showAssessment, setShowAssessment] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
+  const { toast } = useToast();
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-    const fetchProfile = async () => {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+  const fetchProfile = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-            const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/profile`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ user_id: session.user.id })
-            });
+      if (!session) return;
 
-            if (res.ok) {
-                const data = await res.json();
-                setProfile(data);
-            }
-        } catch (error) {
-            console.error('Error fetching profile:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/profile`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: session.user.id }),
+      });
 
-    const generateAssessment = async () => {
-        setGenerating(true);
-        toast({ title: "AI is creating your Activity of Integration", description: "Generating NCDC Scenario..." });
-
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
-
-            const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/assess`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    topic: 'Statistics',
-                    competency: 'MTH-STAT-01',
-                    difficulty: 2
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                console.log("AOI Generated:", data);
-                setAssessmentData(data);
-                setShowAssessment(true);
-                toast({
-                    title: "Activity Ready",
-                    description: "Your personalized assessment has been generated."
-                });
-            }
-        } catch (e) {
-            console.error(e);
-            toast({ title: "Error", variant: "destructive" });
-        } finally {
-            setGenerating(false);
-        }
-    };
-
-    if (loading) {
-        return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>;
+      if (res.ok) {
+        const data = (await res.json()) as LearnerProfile;
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast({ variant: 'destructive', title: 'Failed to load your profile' });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Transform mastery for chart
-    const radarData = profile ? Object.entries(profile.mastery_level).map(([k, v]) => ({
-        subject: k.split('-')[1] || k, // Extract subject from code MTH-ALG
-        mastery: v,
-        fullMark: 1
-    })) : [
-        { subject: 'Math', mastery: 0.6, fullMark: 1 },
-        { subject: 'Physics', mastery: 0.4, fullMark: 1 },
-        { subject: 'Bio', mastery: 0.8, fullMark: 1 },
-        { subject: 'Chem', mastery: 0.5, fullMark: 1 },
-        { subject: 'Hist', mastery: 0.7, fullMark: 1 },
-    ];
+  const generateAssessment = async () => {
+    setGenerating(true);
+    toast({ title: 'AI is preparing your assessment', description: 'Generating a competency-based activity…' });
 
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/v1/ai/assess`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: 'Statistics',
+          competency: 'MTH-STAT-01',
+          difficulty: 2,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Assessment generation failed');
+
+      const data = (await res.json()) as AssessmentData;
+      setAssessmentData(data);
+      setShowAssessment(true);
+      toast({ title: 'Assessment ready', description: 'Your personalized activity has been generated.' });
+    } catch (error) {
+      console.error('Assessment generation error:', error);
+      toast({ variant: 'destructive', title: 'Unable to generate assessment right now' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const radarData = useMemo(() => {
+    if (!profile?.mastery_level) return FALLBACK_RADAR;
+
+    return Object.entries(profile.mastery_level).map(([competencyCode, mastery]) => ({
+      subject: competencyCode.split('-')[1] || competencyCode,
+      mastery,
+      fullMark: 1,
+    }));
+  }, [profile]);
+
+  const strongAreas = profile?.strengths?.length ?? 0;
+  const weakAreas = profile?.weaknesses?.length ?? 0;
+
+  if (loading) {
     return (
-        <div className="p-6 space-y-8 max-w-7xl mx-auto animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
-                    <p className="text-muted-foreground">Welcome back! Here's your AI-powered learning overview.</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button onClick={fetchProfile} variant="outline" size="sm">
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        Refresh Stats
-                    </Button>
-                </div>
-            </div>
-
-            {/* Key Metrics */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-900">Learning Style</CardTitle>
-                        <Brain className="h-4 w-4 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-700">{profile?.learning_style || 'Visual'}</div>
-                        <p className="text-xs text-blue-600/80">AI-detected preference</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-green-900">Mastery Score</CardTitle>
-                        <Target className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-700">68%</div>
-                        <p className="text-xs text-green-600/80">+5% from last week</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-amber-900">Study Streak</CardTitle>
-                        <Sparkles className="h-4 w-4 text-amber-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-amber-700">12 Days</div>
-                        <p className="text-xs text-amber-600/80">Keep it up!</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-purple-900">Next Goal</CardTitle>
-                        <BookOpen className="h-4 w-4 text-purple-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-purple-700">Algebra II</div>
-                        <p className="text-xs text-purple-600/80">Recommended by AI</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="grid gap-8 lg:grid-cols-3">
-                {/* Main Content Area */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* Adaptive Learning Pathway */}
-                    <LearningPathway />
-
-                    {/* Progress & Competency */}
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <Card className="col-span-1 h-full">
-                            <CardHeader>
-                                <CardTitle>Competency Map (CBC)</CardTitle>
-                                <CardDescription>Your mastery across different subjects</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <CompetencyRadar data={radarData} />
-                            </CardContent>
-                        </Card>
-
-                        <div className="col-span-1 h-full">
-                            <MasteryTracker masteryMap={profile?.mastery_level || {}} />
-                        </div>
-                    </div>
-
-                    {/* AI Recommendations */}
-                    <Card className="border-l-4 border-l-primary">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-primary" />
-                                AI Recommendations
-                            </CardTitle>
-                            <CardDescription>Personalized content based on your gaps</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="p-4 border rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors flex gap-4 items-start cursor-pointer">
-                                <div className="bg-white p-2 rounded-full shadow-sm border"><Brain className="h-5 w-5 text-primary" /></div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between">
-                                        <h4 className="font-semibold text-slate-900">Review: Quadratic Equations</h4>
-                                        <Badge variant="secondary" className="text-xs">High Priority</Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mt-1">Based on your recent quiz performance (45%)</p>
-                                    <div className="mt-3 flex gap-2">
-                                        <Button size="sm" variant="default" className="h-8">Start Practice</Button>
-                                        <Button size="sm" variant="outline" className="h-8">Watch Video</Button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="p-4 border rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors flex gap-4 items-start cursor-pointer">
-                                <div className="bg-white p-2 rounded-full shadow-sm border"><BookOpen className="h-5 w-5 text-green-600" /></div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between">
-                                        <h4 className="font-semibold text-slate-900">Advance: Physics Mechanics</h4>
-                                        <Badge variant="outline" className="text-xs">Project</Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mt-1">You've mastered the basics! Try a real-world project.</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Sidebar Area */}
-                <div className="space-y-8">
-                    <Achievements profile={profile} />
-
-                    {/* [NEW] Quest Mode */}
-                    <QuestLog profile={profile} />
-
-                    <Card className="bg-slate-900 text-white border-slate-800">
-                        <CardHeader>
-                            <CardTitle className="text-white">Adaptive Assessment</CardTitle>
-                            <CardDescription className="text-slate-400">Generate quizzes tailored to your level</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <p className="text-sm text-slate-300">
-                                    AI will generate questions specifically for your weak areas in <span className="font-semibold text-white">Statistics</span>.
-                                </p>
-                                <Button size="lg" onClick={generateAssessment} disabled={generating} className="w-full bg-white text-slate-900 hover:bg-slate-100">
-                                    {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {generating ? 'AI Generating...' : 'Start Smart Quiz'}
-                                </Button>
-                                <Button size="lg" variant="outline" onClick={() => setShowQuiz(true)} className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white mt-2">
-                                    Quick Practice (MCQ)
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
-            <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Quick Practice</DialogTitle>
-                    </DialogHeader>
-                    <QuizComponent topic="General Science and Mathematics" onComplete={() => setShowQuiz(false)} />
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showAssessment} onOpenChange={setShowAssessment}>
-                <DialogContent className="max-w-3xl max-h-[80vh]">
-                    <DialogHeader>
-                        <DialogTitle>Activity of Integration</DialogTitle>
-                        <DialogDescription>
-                            Based on NCDC Competency: {assessmentData?.competency || 'Statistics'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="h-[60vh] pr-4">
-                        <div className="space-y-6">
-                            <div className="bg-slate-50 p-4 rounded-lg border">
-                                <h3 className="font-semibold text-lg mb-2 text-slate-900">Scenario</h3>
-                                <p className="text-slate-700 whitespace-pre-wrap">{assessmentData?.scenario}</p>
-                            </div>
-
-                            <div>
-                                <h3 className="font-semibold text-lg mb-2">Instructions</h3>
-                                <p className="text-slate-700 whitespace-pre-wrap">{assessmentData?.instructions}</p>
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                    <h4 className="font-medium text-blue-900 mb-1">Expected Output</h4>
-                                    <p className="text-sm text-blue-800">{assessmentData?.expected_output}</p>
-                                </div>
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                                    <h4 className="font-medium text-green-900 mb-1">Generic Skills</h4>
-                                    <p className="text-sm text-green-800">Critical Thinking, Communication</p>
-                                </div>
-                            </div>
-
-                            {assessmentData?.rubric && (
-                                <div>
-                                    <h3 className="font-semibold text-lg mb-2">Scoring Rubric</h3>
-                                    <div className="grid gap-2">
-                                        {Object.entries(assessmentData.rubric).map(([key, value]) => (
-                                            <div key={key} className="flex gap-4 items-start p-2 border rounded">
-                                                <Badge variant="outline" className="w-20 justify-center shrink-0">
-                                                    {key.replace('_', ' ').toUpperCase()}
-                                                </Badge>
-                                                <p className="text-sm text-slate-600">{String(value)}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowAssessment(false)}>Close</Button>
-                        <Button onClick={() => {
-                            setShowAssessment(false);
-                            toast({ title: "Saved", description: "Activity saved to your portfolio." });
-                        }}>Save to Portfolio</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Student Dashboard</h1>
+          <p className="text-muted-foreground">A clearer view of your progress, priorities, and next actions.</p>
+        </div>
+        <Button onClick={fetchProfile} variant="outline" size="sm">
+          <TrendingUp className="mr-2 h-4 w-4" />
+          Refresh data
+        </Button>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Learning style</CardDescription>
+            <CardTitle className="text-2xl">{profile?.learning_style || 'Adaptive'}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Strong areas</CardDescription>
+            <CardTitle className="text-2xl">{strongAreas}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Priority gaps</CardDescription>
+            <CardTitle className="text-2xl">{weakAreas}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Next review</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Calendar className="h-5 w-5 text-primary" />
+              Today
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-12">
+        <div className="space-y-6 xl:col-span-8">
+          <LearningPathway />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SubjectProgressCard />
+            <MasteryTracker masteryMap={profile?.mastery_level || {}} />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Competency overview
+              </CardTitle>
+              <CardDescription>Mastery across CBC competencies</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CompetencyRadar data={radarData} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-6 xl:col-span-4">
+          <Card className="border-l-4 border-l-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Quick actions
+              </CardTitle>
+              <CardDescription>Start what matters most right now</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                Focus recommendation: <span className="font-medium text-foreground">Statistics remediation</span>
+              </div>
+              <Button className="w-full" size="lg" onClick={generateAssessment} disabled={generating}>
+                {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
+                {generating ? 'Generating…' : 'Start smart assessment'}
+              </Button>
+              <Button className="w-full" size="lg" variant="outline" onClick={() => setShowQuiz(true)}>
+                Quick practice (MCQ)
+              </Button>
+              <Badge variant="secondary">AI-powered</Badge>
+            </CardContent>
+          </Card>
+
+          <Achievements profile={profile} />
+          <QuestLog profile={profile} />
+        </aside>
+      </section>
+
+      <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Quick Practice</DialogTitle>
+            <DialogDescription>Short MCQ practice to keep your momentum.</DialogDescription>
+          </DialogHeader>
+          <QuizComponent topic="General Science and Mathematics" onComplete={() => setShowQuiz(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAssessment} onOpenChange={setShowAssessment}>
+        <DialogContent className="max-h-[80vh] max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Activity of Integration</DialogTitle>
+            <DialogDescription>
+              Based on competency: {assessmentData?.competency || 'MTH-STAT-01'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="h-[60vh] pr-4">
+            <div className="space-y-5">
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <h3 className="mb-1 font-semibold">Scenario</h3>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{assessmentData?.scenario || 'No scenario returned.'}</p>
+              </div>
+
+              <div>
+                <h3 className="mb-1 font-semibold">Instructions</h3>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{assessmentData?.instructions || 'No instructions returned.'}</p>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <h3 className="mb-1 font-semibold">Expected Output</h3>
+                <p className="text-sm text-muted-foreground">{assessmentData?.expected_output || 'No expected output returned.'}</p>
+              </div>
+
+              {assessmentData?.rubric && (
+                <div>
+                  <h3 className="mb-2 font-semibold">Rubric</h3>
+                  <div className="space-y-2">
+                    {Object.entries(assessmentData.rubric).map(([key, value]) => (
+                      <div key={key} className="rounded-md border p-2 text-sm">
+                        <span className="font-medium">{key.replace('_', ' ')}: </span>
+                        <span className="text-muted-foreground">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssessment(false)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowAssessment(false);
+                toast({ title: 'Saved', description: 'Assessment saved to your portfolio.' });
+              }}
+            >
+              Save to portfolio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
