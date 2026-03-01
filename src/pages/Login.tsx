@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSupabaseConfigured, supabase } from '@/integrations/supabase/client';
 import { registerUser, login, getSchools, getUserRole, getCurrentUser, clearSession, type UserRole } from '@/lib/auth';
-import { registerUser, login, getSchools, getUserRole, getCurrentUser, type UserRole } from '@/lib/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -43,11 +42,12 @@ const LoginPage: React.FC = () => {
         title: 'Supabase not configured',
         description: 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable authentication.'
       });
-      return;
+      setSchools([]);
     }
-
-    getSchools().then(setSchools);
   }, [toast]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
 
     if (!isRegister || role !== 'teacher') {
       setSchools([]);
@@ -55,9 +55,19 @@ const LoginPage: React.FC = () => {
     }
 
     let active = true;
-    getSchools().then((data) => {
-      if (active) setSchools(data);
-    });
+    getSchools()
+      .then((data) => {
+        if (active) setSchools(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load schools:', err);
+        if (!active) return;
+        toast({
+          variant: 'destructive',
+          title: 'Unable to load schools',
+          description: 'Please try again in a moment.'
+        });
+      });
 
     return () => {
       active = false;
@@ -65,45 +75,34 @@ const LoginPage: React.FC = () => {
   }, [isRegister, role, toast]);
 
   useEffect(() => {
-    let subscription: { unsubscribe: () => void } | undefined;
+    if (!isSupabaseConfigured) {
+      clearSession();
+      return;
+    }
 
-    const setupAuthListener = async () => {
-      if (!isSupabaseConfigured) {
-        clearSession();
-        return;
-      }
+    const currentUser = getCurrentUser();
 
-      const currentUser = getCurrentUser();
+    const syncSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (currentUser && !session?.user) {
+        clearSession();
+      }
+    };
 
-      // Prevent redirect loops caused by stale localStorage sessions
-      if (currentUser && session?.user) {
-    if (!isSupabaseConfigured) return;
+    syncSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const userRole = await getUserRole(session.user.id);
         redirectBasedOnRole(userRole);
-        return;
       }
 
-      if (currentUser && !session?.user) {
+      if (event === 'SIGNED_OUT') {
         clearSession();
       }
+    });
 
-      const authSub = supabase.auth.onAuthStateChange(async (event, activeSession) => {
-        if (event === 'SIGNED_IN' && activeSession?.user) {
-          const userRole = await getUserRole(activeSession.user.id);
-          redirectBasedOnRole(userRole);
-        }
-      });
-
-      subscription = authSub.data.subscription;
-    };
-
-    setupAuthListener();
-
-    return () => subscription?.unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   const redirectBasedOnRole = (userRole: UserRole) => {
