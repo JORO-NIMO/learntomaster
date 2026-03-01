@@ -135,19 +135,29 @@ const LoginPage: React.FC = () => {
           if (!schoolId) throw new Error('Please select your school');
         }
 
-        const user = await registerUser(email, name.trim(), password, role, {
+        const { user, requiresEmailConfirmation } = await registerUser(email, name.trim(), password, role, {
           lin: role === 'student' ? lin.trim() : undefined,
           tmis: role === 'teacher' ? tmis.trim() : undefined,
           nin: role === 'teacher' ? nin.trim() : undefined,
           school_id: schoolId || undefined
         });
 
+        if (requiresEmailConfirmation) {
+          toast({
+            title: "Verify your email",
+            description: "Your account was created. Confirm your email address, then log in."
+          });
+          setIsRegister(false);
+          navigate('/login', { replace: true });
+          return;
+        }
+
         toast({
           title: "Account created",
           description: `Welcome to Learn2Master, ${user.name}!`
         });
 
-        redirectBasedOnRole(role);
+        redirectBasedOnRole(user.role);
       } else {
         const user = await login(email, password);
 

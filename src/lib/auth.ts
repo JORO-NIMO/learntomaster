@@ -21,6 +21,11 @@ export type AuthUser = {
   lastLogin?: string;
 };
 
+export type RegisterResult = {
+  user: AuthUser;
+  requiresEmailConfirmation: boolean;
+};
+
 const LOCAL_SESSION_KEY = 'l2m_session_v3';
 
 function isNetworkFetchError(error: unknown): boolean {
@@ -138,7 +143,7 @@ export async function registerUser(
   password: string,
   role: UserRole = 'student',
   extraData?: { lin?: string; tmis?: string; nin?: string; school_id?: string }
-): Promise<AuthUser> {
+): Promise<RegisterResult> {
   try {
     assertSupabaseConfigured();
     const redirectUrl = `${window.location.origin}/`;
@@ -162,6 +167,27 @@ export async function registerUser(
     }
     if (!data.user) throw new Error('Registration failed - no user returned');
 
+    // Supabase can require email verification before creating an authenticated session.
+    // In that case, do not attempt profile/role queries yet because RLS requires auth.uid().
+    if (!data.session) {
+      const pendingUser: AuthUser = {
+        id: data.user.id,
+        userId: data.user.id,
+        name: data.user.user_metadata?.name || name,
+        email: data.user.email,
+        role: 'student',
+        schoolId: data.user.user_metadata?.school_id,
+        createdAt: data.user.created_at,
+        isVerified: false,
+      };
+
+      clearSession();
+      return {
+        user: pendingUser,
+        requiresEmailConfirmation: true,
+      };
+    }
+
     // Wait for the profile to be created by the trigger
     await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -172,7 +198,10 @@ export async function registerUser(
 
     const authUser = supabaseUserToAuthUser(data.user, profile, userRole);
     setLocalUser(authUser);
-    return authUser;
+    return {
+      user: authUser,
+      requiresEmailConfirmation: false,
+    };
   } catch (error) {
     console.error('Register error:', error);
     if (isNetworkFetchError(error)) {
