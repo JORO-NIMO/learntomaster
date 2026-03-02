@@ -125,29 +125,36 @@ const LoginPage: React.FC = () => {
 
     try {
       if (isRegister) {
+        if (role !== 'student') {
+          throw new Error('Teacher and admin accounts must be provisioned by an administrator. Please use student signup or contact support.');
+        }
         if (!name.trim()) throw new Error('Name is required');
         if (!email.trim()) throw new Error('Email is required');
         if (password.length < 6) throw new Error('Password must be at least 6 characters');
         if (role === 'student' && !lin.trim()) throw new Error('Learner ID (LIN) is required for students');
-        if (role === 'teacher') {
-          if (!tmis.trim()) throw new Error('TMIS Number is required for teachers');
-          if (!nin.trim()) throw new Error('NIN is required for teachers');
-          if (!schoolId) throw new Error('Please select your school');
-        }
-
-        const user = await registerUser(email, name.trim(), password, role, {
+        const { user, requiresEmailConfirmation } = await registerUser(email, name.trim(), password, role, {
           lin: role === 'student' ? lin.trim() : undefined,
-          tmis: role === 'teacher' ? tmis.trim() : undefined,
-          nin: role === 'teacher' ? nin.trim() : undefined,
+          tmis: undefined,
+          nin: undefined,
           school_id: schoolId || undefined
         });
+
+        if (requiresEmailConfirmation) {
+          toast({
+            title: "Verify your email",
+            description: "Your account was created. Confirm your email address, then log in."
+          });
+          setIsRegister(false);
+          navigate('/login', { replace: true });
+          return;
+        }
 
         toast({
           title: "Account created",
           description: `Welcome to Learn2Master, ${user.name}!`
         });
 
-        redirectBasedOnRole(role);
+        redirectBasedOnRole(user.role);
       } else {
         const user = await login(email, password);
 
@@ -193,9 +200,15 @@ const LoginPage: React.FC = () => {
           <Tabs defaultValue="student" onValueChange={(v) => setRole(v as UserRole)} className="mb-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="student">Student</TabsTrigger>
-              <TabsTrigger value="teacher">Teacher</TabsTrigger>
-              <TabsTrigger value="admin">Admin</TabsTrigger>
+              <TabsTrigger value="teacher" disabled={isRegister}>Teacher</TabsTrigger>
+              <TabsTrigger value="admin" disabled={isRegister}>Admin</TabsTrigger>
             </TabsList>
+
+            {isRegister && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Signup is currently available for students only. Teacher/admin accounts are created by administrators.
+              </p>
+            )}
 
             <div className="mt-4">
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -314,12 +327,14 @@ const LoginPage: React.FC = () => {
               className="text-primary font-semibold cursor-pointer hover:underline"
               onClick={() => {
                 setIsRegister(!isRegister);
+                if (!isRegister) setRole('student');
                 setEmail('');
                 setPassword('');
                 setName('');
                 setLin('');
                 setTmis('');
                 setNin('');
+                setSchoolId('');
               }}
             >
               {isRegister ? 'Login' : 'Register'}
