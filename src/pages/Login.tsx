@@ -125,6 +125,9 @@ const LoginPage: React.FC = () => {
 
     try {
       if (isRegister) {
+        if (role !== 'student') {
+          throw new Error('Teacher and admin accounts must be provisioned by an administrator. Please use student signup or contact support.');
+        }
         if (!name.trim()) throw new Error('Name is required');
         if (!email.trim()) throw new Error('Email is required');
         if (password.length < 6) throw new Error('Password must be at least 6 characters');
@@ -137,8 +140,8 @@ const LoginPage: React.FC = () => {
 
         const { user, requiresEmailConfirmation } = await registerUser(email, name.trim(), password, role, {
           lin: role === 'student' ? lin.trim() : undefined,
-          tmis: role === 'teacher' ? tmis.trim() : undefined,
-          nin: role === 'teacher' ? nin.trim() : undefined,
+          tmis: undefined,
+          nin: undefined,
           school_id: schoolId || undefined
         });
 
@@ -203,9 +206,15 @@ const LoginPage: React.FC = () => {
           <Tabs defaultValue="student" onValueChange={(v) => setRole(v as UserRole)} className="mb-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="student">Student</TabsTrigger>
-              <TabsTrigger value="teacher">Teacher</TabsTrigger>
-              <TabsTrigger value="admin">Admin</TabsTrigger>
+              <TabsTrigger value="teacher" disabled={isRegister}>Teacher</TabsTrigger>
+              <TabsTrigger value="admin" disabled={isRegister}>Admin</TabsTrigger>
             </TabsList>
+
+            {isRegister && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Signup is currently available for students only. Teacher/admin accounts are created by administrators.
+              </p>
+            )}
 
             <div className="mt-4">
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -324,12 +333,14 @@ const LoginPage: React.FC = () => {
               className="text-primary font-semibold cursor-pointer hover:underline"
               onClick={() => {
                 setIsRegister(!isRegister);
+                if (!isRegister) setRole('student');
                 setEmail('');
                 setPassword('');
                 setName('');
                 setLin('');
                 setTmis('');
                 setNin('');
+                setSchoolId('');
               }}
             >
               {isRegister ? 'Login' : 'Register'}

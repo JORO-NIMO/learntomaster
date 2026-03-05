@@ -175,7 +175,7 @@ export async function registerUser(
         userId: data.user.id,
         name: data.user.user_metadata?.name || name,
         email: data.user.email,
-        role: 'student',
+        role: ((data.user.user_metadata?.role as UserRole | undefined) ?? role ?? 'student'),
         schoolId: data.user.user_metadata?.school_id,
         createdAt: data.user.created_at,
         isVerified: false,
