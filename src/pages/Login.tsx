@@ -203,7 +203,7 @@ const LoginPage: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="student" onValueChange={(v) => setRole(v as UserRole)} className="mb-6">
+          <Tabs value={role} onValueChange={(v) => setRole(v as UserRole)} className="mb-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="student">Student</TabsTrigger>
               <TabsTrigger value="teacher" disabled={isRegister}>Teacher</TabsTrigger>
