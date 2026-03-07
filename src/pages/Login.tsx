@@ -132,6 +132,12 @@ const LoginPage: React.FC = () => {
         if (!email.trim()) throw new Error('Email is required');
         if (password.length < 6) throw new Error('Password must be at least 6 characters');
         if (role === 'student' && !lin.trim()) throw new Error('Learner ID (LIN) is required for students');
+        if (role === 'teacher') {
+          if (!tmis.trim()) throw new Error('TMIS Number is required for teachers');
+          if (!nin.trim()) throw new Error('NIN is required for teachers');
+          if (!schoolId) throw new Error('Please select your school');
+        }
+
         const { user, requiresEmailConfirmation } = await registerUser(email, name.trim(), password, role, {
           lin: role === 'student' ? lin.trim() : undefined,
           tmis: undefined,
