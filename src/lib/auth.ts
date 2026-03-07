@@ -170,6 +170,7 @@ export async function registerUser(
     // Supabase can require email verification before creating an authenticated session.
     // In that case, do not attempt profile/role queries yet because RLS requires auth.uid().
     if (!data.session) {
+      const pendingRole: UserRole = (data.user.user_metadata?.role as UserRole | undefined) ?? role ?? 'student';
       const pendingUser: AuthUser = {
         id: data.user.id,
         userId: data.user.id,
